@@ -1,0 +1,11 @@
+# Compilación
+bin/
+obj/
+# Visual Studio / VS Code
+.vs/
+*.user
+*.suo
+# Configuración local: nunca subir cadenas de conexión reales
+appsettings.Development.json
+appsettings.*.local.json
+*.bak
