@@ -1,0 +1,17 @@
+{
+  "name": "eVidencia .NET 10 - demo",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "10.0"
+    }
+  },
+  "forwardPorts": [5080],
+  "portsAttributes": {
+    "5080": {
+      "label": "eVidencia demo",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postAttachCommand": "bash .devcontainer/arrancar.sh"
+}
