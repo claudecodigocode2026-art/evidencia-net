@@ -1,0 +1,1147 @@
+﻿@font-face {
+    font-family: 'TelefonicaSansLight';
+    src: url('TelefonicaSansLight.otf');
+    src: local('TelefonicaSansLight'), local('TelefonicaSansLight') format('truetype');
+}
+
+@font-face {
+    font-family: 'TelefonicaSansRegular';
+    src: url('TelefonicaSansRegular.otf');
+    src: local('TelefonicaSansRegular'), local('TelefonicaSansRegular') format('truetype');
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'TelefonicaSansRegular', Verdana, Arial, Helvetica, sans-serif;
+    font-size: 0.8em;
+    background: #f2eae3;
+    color: #424242;
+}
+
+.body
+{
+    width: 100%;
+    min-width: 990px;
+}
+
+p
+{
+    margin-bottom: 10px;
+    line-height: 1.6em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	border-style: none;
+    border-color: inherit;
+    border-width: 0;
+    margin: 0 0px 0 0;
+    padding: 0;
+    font-size: 100%;
+	vertical-align: baseline;
+}
+
+h2 {
+    font-family: 'TelefonicaSansLight',Arial,Helvetica,sans-serif;
+    font-weight: normal;
+    font-size: 2.5em;
+    margin-bottom: 5px;
+    color: #0166ff;
+}
+
+h1
+{
+    font-size: 1.6em;
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+}
+
+h2
+{
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+h3
+{
+    font-size: 1.2em;
+}
+
+h4
+{
+    font-size: 1.1em;
+}
+
+h5, h6
+{
+    font-size: 1em;
+}
+
+.rightColumn > h1, .rightColumn > h2, .leftColumn > h1, .leftColumn > h2
+{
+    margin-top: 0px;
+}
+
+.page
+{
+    max-width: 1150px;
+    background-color: #fff;
+    margin: 0 auto;    
+}
+.main
+{
+    padding: 0px 12px;
+    margin: 12px 8px 8px 8px;
+    min-height: 420px;
+}
+
+.leftCol
+{
+    padding: 6px 0px;
+    margin: 12px 8px 8px 8px;
+    width: 200px;
+    min-height: 200px;
+}
+
+footer {
+    width: 1150px;
+    margin: 30px auto 0;
+    font-family: 'TelefonicaSansRegular',Verdana,Arial,Helvetica,sans-serif;
+    background-color: #0166ff;
+    border: 1px solid #fff;
+    margin-bottom: 30px;
+}
+
+#pie {
+    font-size: 0.9em;
+    clear: both;
+    color: #fff;
+    margin-bottom: -1px;
+    background-color: #0166ff;
+    border-bottom: 1px solid #fff;
+}
+#pie-interior {
+	padding: 10px 25px;
+	margin: 0 auto;
+}
+#pie a {
+	color: #00c1d5;
+}
+#pie span {
+	float: left;
+	line-height: 0.9em;
+}
+#pie ul {
+	float: left;
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+#pie ul li {
+	border-left: 1px solid #00c1d5;
+	display: block;
+	float: left;
+	line-height: 0.9em;
+	margin: 0 0 0 4px;
+	padding: 0 0 1px 5px;
+}
+#pie ul li:first-child{margin: 0 5px 0 0; padding: 0}
+
+#pie ul li.copy {
+	border:none;
+}
+#pie #pie-interior ul li a {
+	position: relative;
+}
+#copy {
+	padding: 2px 0 0;
+}
+/* TAB MENU   
+----------------------------------------------------------*/
+
+div.hideSkiplink
+{
+    background-color:#3a4f63;
+    width:100%;
+}
+
+div.menu
+{
+    padding: 4px 0px 4px 8px;
+}
+
+div.menu ul
+{
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+    width: auto;
+}
+
+div.menu ul li a, div.menu ul li a:visited
+{
+    background-color: #465c71;
+    border: 1px #4e667d solid;
+    color: #dde4ec;
+    display: block;
+    line-height: 1.35em;
+    padding: 4px 20px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+div.menu ul li a:hover
+{
+    background-color: #bfcbd6;
+    color: #465c71;
+    text-decoration: none;
+}
+
+div.menu ul li a:active
+{
+    background-color: #465c71;
+    color: #cfdbe6;
+    text-decoration: none;
+}
+
+/* FORM ELEMENTS   
+----------------------------------------------------------*/
+
+fieldset
+{
+    margin: 1em 0px;
+    padding: 1em;
+    border: 1px solid #0166ff;
+}
+
+fieldset p 
+{
+    margin: 2px 12px 10px 10px;
+}
+
+fieldset.login label, fieldset.register label, fieldset.changePassword label
+{
+    display: block;
+}
+
+fieldset label.inline 
+{
+    display: inline;
+}
+
+legend 
+{
+    font-size: 1.1em;
+    font-weight: 600;
+    padding: 2px 4px 8px 4px;
+}
+
+input.textEntry 
+{
+    width: 320px;
+    border: 1px solid #ccc;
+}
+
+input.passwordEntry 
+{
+    width: 320px;
+    border: 1px solid #ccc;
+}
+
+div.accountInfo
+{
+    width: 42%;
+}
+
+/* MISC  
+----------------------------------------------------------*/
+
+.clear
+{
+    clear: both;
+}
+
+.title
+{
+    display: block;
+    float: left;
+    text-align: left;
+    width: auto;
+}
+
+.loginDisplay
+{
+    font-size: 1.1em;
+    display: block;
+    text-align: right;
+    padding: 10px;
+    color: White;
+}
+
+.loginDisplay a:link
+{
+    color: white;
+}
+
+.loginDisplay a:visited
+{
+    color: white;
+}
+
+.loginDisplay a:hover
+{
+    color: white;
+}
+
+.failureNotification
+{
+    font-size: 1em;
+    color: Red;
+}
+
+.bold
+{
+    font-weight: bold;
+}
+
+.submitButton
+{
+    text-align: right;
+    padding-right: 10px;
+}
+
+/****************HEADER**************************/
+.header {
+    background-image:url('/Images/cabeceraTelefonica.png');
+	background-repeat: repeat;
+	background-color: #0166ff;
+	width: 100%;
+	min-width:  990px;	
+	margin: 0 auto;
+	max-width: 1600px;
+	margin-top: 29px;
+}
+
+.headerInferior
+{
+    height: 95px;
+}
+
+.bienvenida {
+    color: #FFFFFF;
+    float: right;
+    font-family: 'TelefonicaSansRegular',Arial,Helvetica,sans-serif;
+    font-size: 1em;
+    margin-right: 20px;
+}
+.bienvenida a
+{
+    color: #fff;
+    text-decoration:none;
+}
+
+.bienvenida .mensajeBienvenida
+{
+    float:left;
+    margin-right: 10px;
+    margin-top: 5px;   
+}
+.bienvenida .iconaBienvenida
+{
+    white-space: nowrap;
+    float:left;
+    padding-top: 10px;
+}
+.titular01 {
+    color: #FFFFFF;
+    font-family: 'TelefonicaSansRegular',Verdana,Geneva,sans-serif;
+    font-size: 30px;
+    font-weight: normal;
+    line-height: 1em;
+    white-space: nowrap;
+    float: left;
+    margin-top: 4px;
+}
+
+.titular01 h1
+{
+    text-decoration: none;
+    color: White;    
+}
+
+.titular01 a
+{
+    text-decoration: none;
+    color: #fff;
+}
+.titular01 a:visited
+{
+    text-decoration: none;
+    color: #fff;
+}
+/****************END HEADER**********************/
+
+.cuerpo
+{
+    width: 100%;
+}
+
+.customLogo 
+{
+    float:left;
+    margin-left: 15px;
+    padding-top: 3px;
+}
+
+.banderas
+{
+    text-align: right;
+    padding-top: 5px;
+    width: 60px;
+    float: right;
+}
+
+.iconoBandera
+{
+    width: 16px;
+    height: 11px;
+    padding-left:5px;
+}
+
+.tituloEvidencia {
+    color: #FFFFFF;
+    font-family: 'TelefonicaSansRegular',Arial,Helvetica,sans-serif;
+    font-weight: bold;
+    font-size: 22px;
+    padding-top: 21px;
+    white-space: nowrap;
+    float: left;
+}
+a:link, a:visited
+{
+   color : #034af3;
+}
+
+a:hover
+{
+    color: #1d60ff;
+    text-decoration: none;
+}
+
+a:active
+{
+   color: #fff;
+}
+
+a img
+{
+    border:none;
+    outline : none;
+}
+
+a 
+{
+    outline : none; /*Remove outline from image link*/
+} 
+
+img 
+{
+    border-style: none;
+    border-color: inherit;
+    border-width: 0;
+}
+
+.formulario label
+{
+    font-weight:bold;
+}
+
+.formularioLogin {
+    text-align: right;
+    font-family: 'TelefonicaSansRegular',Arial,Helvetica,sans-serif;
+    font-size: 1em;
+}
+
+.formularioLogin label
+{
+    padding-right:5px; 
+}
+
+.botoneraMiddle
+{  
+    margin-left:12px;
+    margin-right:12px;
+    text-align: left;
+    margin: 5px 0;
+    padding: 5px 0px;
+    width: 100%;
+    min-height: 25px;
+     background-color: #ffffff;
+  
+}
+.botoneraAcciones {
+    margin-left: 12px;
+    margin-right: 12px;
+    text-align: left;
+    margin: 5px 0;
+    padding: 5px 0px;
+    width: 100%;
+    background-color: #f2f4ff;
+    /* min-height: 25px; */
+}
+
+.botoneraAcciones input[type=submit], .botoneraMiddle button[type=submit] {
+    background-color: #0166ff; /*color botones*/
+    border: 1px solid #0166ff;
+    color: #fff;
+    margin-left: 10px; /*separa los botones entre el margen y entre ellos*/
+    margin-top: 1px;
+    padding-left: 13px;
+    padding-right: 13px;
+    margin-right: 5px;
+}
+
+.botoneraAcciones input[type=submit]:hover, .botoneraMiddle button[type=submit]:hover
+{
+    background-color:#fff;
+    color: #0166ff ;
+}
+
+.botoneraAcciones input[type=submit].aspNetDisabled, .botoneraMiddle button[type=submit].aspNetDisabled {
+    background-color: #667;
+    font-weight: normal;
+    color: White;
+    border-color: #667;
+    cursor: default;
+}
+
+    .botoneraAcciones input[type=submit].aspNetDisabled:hover, .botoneraMiddle button[type=submit].aspNetDisabled:hover {
+        background-color: #667;
+        font-weight: normal;
+        color: White;
+        border-color: #667;
+    }
+
+.menuEntidades
+{
+    width: 160px;
+    float: left;
+    padding-top: 8px;
+}
+.detalleEntidad
+{
+    margin-left: 170px;
+    margin-right: 10px;
+    padding-bottom: 20px;
+    padding-top: 10px;
+    min-height: 400px;
+}
+
+.SociedadPeriodo
+{
+    background-color: #E9E9E9;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+    
+legend 
+{    
+    font-size: 1.3em;
+    font-weight: 600;
+    padding: 2px 4px 8px 4px;
+    color:#0166ff;
+}
+
+.BordesTabla
+{
+    border:1px solid #0166ff;    
+}
+
+table.subsection {
+    margin-top: 5px;
+    padding: 5px;
+    background-color: #f2f4ff;
+    border-style: dashed;
+    border-width: 1px;
+    border-color: #0166ff;
+}
+
+.datepicker {
+    width: 75px;
+    margin-right:4px;
+}
+
+.CodigoEvidencia
+{
+    padding: 5px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    border: solid 1px #0166ff;
+}
+
+.error {
+    float: left;
+    background-color: #FFFFCC;
+    font-size: 13px;
+    margin-bottom: 5px;
+    padding: 1%;
+    width: 98%;
+}
+
+.menuPrincipal
+{
+    color:#0166ff;
+    padding-left: 10px;    
+}
+
+.menuPrincipal p   
+{
+    margin-bottom: 5px;
+    font-weight: bold;
+    display:inline-block;
+    line-height:16px; 
+    background: url('/images/collapse.png') no-repeat left;    
+    padding-left:20px;  
+}
+
+.menuPrincipal li a
+{ 
+    display: block;
+    text-decoration: none;
+    padding-left: 15px;
+    color: #0166ff;
+}
+    .menuPrincipal li a:hover {
+        color: #5e9eff;
+    }
+
+.menuPrincipal ul
+{
+    width:95% !important;
+    list-style: none;
+    padding: 0;
+    margin-top: 3px;
+}
+
+.menuPrincipal a:hover
+{
+    color: #0166ff;
+}
+
+.bienvenida a
+{
+    color: #fff;
+    text-decoration:none;
+}
+
+.bienvenida {
+    color: #FFFFFF;
+    float: right;
+    font-family: 'TelefonicaSansRegular',Arial,Helvetica,sans-serif;
+    font-size: 1em;
+    margin-right: 20px;
+}
+.bienvenida .mensajeBienvenida
+{
+    float:left;
+    margin-right: 10px;
+    margin-top: 15px;   
+}
+.bienvenida .iconaBienvenida
+{
+    white-space: nowrap;
+    float:left;
+    padding-top: 10px;
+}
+
+/* filtros*/
+.botonera {
+    background-color: #f2f4ff;
+    margin: 5px 0;
+    padding: 5px 4px;
+    width: 100%;
+}
+
+.botonera span
+{   
+    margin: 5px 0;
+    padding-left:10px;
+    width: 100%;
+}
+
+    .botonera input[type=submit], .botonera input[type=button] {
+        background-color: #0166ff; /*color botones*/
+        border: 1px solid #0166ff;
+        color: #fff;
+        margin-left: 10px; /*separa los botones entre el margen y entre ellos*/
+        margin-top: 1px;
+        padding-left: 13px;
+        padding-right: 13px;
+    }
+
+
+.botonera input[type=submit]:hover, .botonera input[type=button]:hover
+{
+     background-color:#fff;
+     color: #0166ff ;
+}
+
+.botonera input[type=submit].aspNetDisabled, .botonera input[type=button].aspNetDisabled
+{
+    background-color: #667;
+    font-weight: normal;
+    color: White;
+    border-color: #667;
+    cursor: default;
+}
+
+    .botonera input[type=submit].aspNetDisabled:hover, .botonera input[type=button].aspNetDisabled:hover {
+        background-color: #667;
+        font-weight: normal;
+        color: white;
+        border-color: #667;
+    }
+
+
+.botonera a:link, .botonera a:visited
+{
+   color : #005073;
+   text-decoration:none;
+}
+
+.botonera a:hover
+{
+    color: #005073;
+    text-decoration:underline;
+}
+
+.botonera a:active
+{
+    color: #005073;
+}
+
+.botonera label
+{
+    font-weight: bold;
+}
+
+.botonera.filtros div.filaFiltros {
+    border: 1px solid #0166ff;
+    padding: 5px 0;
+}
+
+    .botonera.filtros div.filaFiltros div {
+        display: inline-block;
+    }
+
+.anchoFijo
+{
+    width: 150px;    
+}
+
+
+.anchoFijoGridEvidencias
+{
+    width: 450px;    
+}
+
+.multiselectable { width:500px; display:block; overflow: hidden; width: 100%; }
+.multiselectable select, .multiselectable div { width: 300px; float:left; }
+.multiselectable div * { display: block; margin: 0 auto; }
+.multiselectable div { display: inline; }
+.multiselectable .m-selectable-controls { margin-top: 1.5em; width: 50px; }
+.multiselectable .m-selectable-controls button { margin-top: 1em; }
+.multiselectable label {padding-bottom: 5px;}
+
+.multiselectable button
+{
+    border-style: none;
+    border-color: inherit;
+    border-width: medium;
+    background-color: #0166ff ; /*color botones*/
+    color: #fff;
+    margin-top: 1px;
+    padding-left: 5px;
+    padding-right: 5px;
+    font-weight: bold;
+    width: 35px;
+    height: 20px;
+}
+
+.multiselectable select {
+    height: 170px;
+}
+    .multiselectable select option:checked {
+        white-space: normal !important;
+    }
+  
+.asteriscoValidadores
+{
+    color: Red;    
+}
+
+.capaInvisible
+{
+    visibility: hidden;
+    height: 0;
+}
+
+/* css for timepicker */
+.ui-timepicker-div .ui-widget-header { margin-bottom: 8px; }
+.ui-timepicker-div dl { text-align: left; }
+.ui-timepicker-div dl dt { float: left; clear:left; padding: 0 0 0 5px; }
+.ui-timepicker-div dl dd { margin: 0 10px 10px 45%; }
+.ui-timepicker-div td { font-size: 90%; }
+.ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
+
+.ui-timepicker-rtl{ direction: rtl; }
+.ui-timepicker-rtl dl { text-align: right; padding: 0 5px 0 0; }
+.ui-timepicker-rtl dl dt{ float: right; clear: right; }
+.ui-timepicker-rtl dl dd { margin: 0 45% 10px 10px; }
+
+ 
+#progressbar
+{
+    width: 350px;
+} 
+
+.progress-label { 
+    float: left; 
+    width: 100%; 
+    text-align: center; 
+    margin-top: 5px; 
+    font-weight: bold; 
+    text-shadow: 1px 1px 0 #fff; 
+}
+
+.ui-jqgrid,
+.ui-th-column, 
+.ui-jqgrid .ui-jqgrid-htable th.ui-th-column {
+    border-color: #5e9eff;
+}
+
+.ui-jqgrid tr.jqgrow td
+{
+    height:22px !important; 
+    white-space:nowrap !important;
+}
+
+    .ui-jqgrid tr.jqgrow td img.estadorespuesta {
+        border: 1px solid #FFF;
+        border-radius: 50px;
+    }
+
+.ui-jqgrid .ui-priority-secondary,
+.ui-jqgrid .ui-widget-content .ui-priority-secondary,
+.ui-jqgrid .ui-widget-header .ui-priority-secondary {
+    background-color: #F2F4FF !important;
+    opacity: 1 !important;
+    filter: Alpha(Opacity=100) !important;
+}
+
+/* Al seleccionar una línea, expandimos el contenido de sus celdas */
+    .ui-jqgrid tr.jqgrow.ui-state-highlight td {
+        white-space: normal !important;
+        word-break: break-word !important;
+        background: #5e9eff;
+        border-color: #5e9eff;
+        color: #424242;
+    }
+
+.ui-jqgrid .ui-state-hover {
+    background: #5e9eff !important;
+}
+
+ .no-close .ui-dialog-titlebar-close {
+        display: none;
+}
+
+/* Comentarios anteriores */
+.contenedorComentariosAnteriores {
+    padding: 0px;
+    max-height: 190px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 10px 0 0 0;
+    border: 1px solid #0166ff;
+    max-width: 940px;
+    background: #f0f0f0;
+}
+
+    .contenedorComentariosAnteriores.fullsize {
+        max-width: 100%;
+    }
+
+    .contenedorComentariosAnteriores .cabeceraComentariosAnteriores {
+        margin: 0;
+        background: #0166ff;
+        padding: 5px;
+    }
+        .contenedorComentariosAnteriores .cabeceraComentariosAnteriores span {
+            color: #FFF;
+            font-size: 1em;
+        }
+        .contenedorComentariosAnteriores .cabeceraComentariosAnteriores img {
+            float: right;
+            cursor: pointer;
+        }
+    .contenedorComentariosAnteriores fieldset {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .contenedorComentariosAnteriores legend {
+        font-size: 1.1em;
+    }
+
+    .contenedorComentariosAnteriores iframe {
+        border: none;
+    }
+
+    .contenedorComentariosAnteriores .contenedorComentarioAnterior {
+        margin-bottom: 5px;
+    }
+
+        .contenedorComentariosAnteriores .contenedorComentarioAnterior .fechaAnterior {
+            font-weight: bold;
+            margin-bottom: 5px;
+            background: #f2f4ff;
+            padding: 5px;
+        }
+
+        .contenedorComentariosAnteriores .contenedorComentarioAnterior .comentarioAnterior {
+            padding: 0 5px;
+        }
+
+            .contenedorComentariosAnteriores .contenedorComentarioAnterior .comentarioAnterior span,
+            .contenedorComentariosAnteriores .contenedorComentarioAnterior .comentarioAnterior h2 {
+                background: transparent !important;
+            }
+
+    .contenedorComentariosAnteriores.fullsize {
+        position: fixed;
+        top: 0;
+        left: 0;
+        background: #FFF;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        height: 100vh;
+        max-height: inherit;
+    }
+
+/* Mensajes */
+.contenedorMensajes {
+    padding: 0px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 5px 0;
+    border: 1px solid #0166ff;
+}
+
+    .contenedorMensajes .cabeceraMensajes {
+        margin: 0;
+        background: #0166ff;
+        padding: 5px;
+    }
+
+        .contenedorMensajes .cabeceraMensajes span,
+        .contenedorMensajes .cabeceraMensajes label {
+            color: #FFF;
+            font-size: 1em;
+            font-weight: normal;
+        }
+
+        .contenedorMensajes .cabeceraMensajes img {
+            float: right;
+            cursor: pointer;
+        }
+
+    .contenedorMensajes fieldset {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .contenedorMensajes legend {
+        font-size: 1.1em;
+    }
+
+    .contenedorMensajes iframe {
+        border: none;
+    }
+
+    .contenedorMensajes.fullsize iframe {
+        height: 100% !important;
+        height: 95vh !important;
+    }
+
+    .contenedorMensajes .contenedorMensaje {
+        margin-bottom: 5px;
+        padding: 5px 5px 0 5px;
+    }
+
+    .contenedorMensajes.disabled {
+        background: #f0f0f0;
+    }
+
+        .contenedorMensajes.disabled .contenedorMensaje span,
+        .contenedorMensajes.disabled .contenedorMensaje h2 {
+            background: transparent !important;
+        }
+
+.contenedorMensajes .contenedorComentario {
+    background-color: #f2f4ff;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.contenedorMensajes.fullsize {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #FFF;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    height: 100vh;
+    max-height: inherit;
+}
+
+.bodymp.fullsize {
+    overflow: hidden;
+}
+
+.anexarconenlace {
+    padding: 5px 10px 10px 10px;
+    margin: 5px 0 0 0;
+}
+
+.divAnexar {
+    padding: 10px 0 0 0;
+}
+    .divAnexar .grid {
+        min-width: 50%;
+        background: #FFF;
+        border: 1px solid #DDD;
+    }
+        .divAnexar .grid tr.anexoCarpetaRowGrid {
+            background: #f2f4ff;
+        }
+        .divAnexar .grid td.showspaces {
+            white-space: break-spaces;
+        }
+
+    .documentosAnexados ul.listadoAnexos {
+        list-style: none;
+    }
+        .documentosAnexados ul.listadoAnexos li {
+            padding: 5px;
+        }
+            .documentosAnexados ul.listadoAnexos li img {
+                margin-right: 5px;
+                vertical-align: top;
+            }
+            .documentosAnexados ul.listadoAnexos li a {
+                color: #0166ff;
+            }
+
+input, select, textarea, button {
+    font-family: 'TelefonicaSansRegular',Verdana, Arial, Helvetica, sans-serif;
+    cursor: pointer;
+}
+
+    input[type="text"], input[type="password"], textarea {
+        cursor: text;
+    }
+
+.multiselectable select {
+    cursor: default;
+}
+    .multiselectable select option {
+        cursor: pointer;
+    }
+
+.botoneraAcciones [type="text"],
+.botoneraAcciones [type="password"],
+.botoneraAcciones select,
+.botonera [type="text"],
+.botonera [type="password"],
+.botonera select,
+.formulario [type="text"],
+.formulario [type="password"],
+.formulario select,
+.formulario textarea,
+.ui-datepicker .ui-datepicker-title select {
+    border: 1px solid #AAA;
+}
+
+.ui-jqgrid .ui-pg-input,
+.ui-jqgrid .ui-pg-selbox {
+    border: 1px solid #FFF;
+}
+
+img.ui-datepicker-trigger,
+.ui-datepicker .ui-datepicker-prev span, 
+.ui-datepicker .ui-datepicker-next span {
+    cursor: pointer;
+}
+
+.ui-widget-content a,
+.plupload_container,
+.plupload_header_title,
+.plupload_header_text,
+.plupload_buttons {
+    font-family: 'TelefonicaSansRegular', Verdana, Arial, Helvetica, sans-serif !important;
+}
+
+.ui-dialog .ui-dialog-title {
+    font-size: 1.1em;
+    font-weight: normal;
+}
+
+.ui-datepicker.ui-widget-content {
+    background: #f2f4ff;
+    border-color: #aaa;
+}
+
+    .ui-datepicker .ui-widget-header {
+        background: #0166ff;
+        border-color: #0166ff;
+    }
+
+        .ui-datepicker .ui-widget-header select {
+            border: 1px solid #FFF;
+        }
+
+        .ui-datepicker .ui-widget-header .ui-datepicker-next.ui-state-hover,
+        .ui-datepicker .ui-widget-header .ui-datepicker-prev.ui-state-hover {
+            background: #0166ff !important;
+            border-color: #0166ff;
+        }
+
+    .ui-datepicker .ui-datepicker-today .ui-state-default.ui-state-highlight {
+        background: #DDD !important;
+        border-color: #424242;
+        color: #424242;
+    }
+
+    .ui-datepicker.ui-widget-content .ui-state-default {
+        background: #fff;
+        color: #424242;
+        border-color: #aaa;
+    }
+
+        .ui-datepicker.ui-widget-content .ui-state-default:hover {
+            background: #5e9eff !important;
+            border-color: #5e9eff !important;
+            color: #FFF;
+        }
+
+    .ui-datepicker.ui-widget-content .ui-state-active,
+    .ui-datepicker.ui-widget-content .ui-datepicker-today .ui-state-default.ui-state-highlight.ui-state-active {
+        background: #5e9eff !important;
+        border-color: #0166ff !important;
+        color: #FFF !important;
+    }

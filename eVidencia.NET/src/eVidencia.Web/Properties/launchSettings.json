@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "eVidencia.Web": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "Administracion/Procesos.aspx",
+      "applicationUrl": "http://localhost:5080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+@using eVidencia.BLL
+@inject GestorUsuarios GestorUsuarios
+@{
+    // Origen: eVidencias.Web/Controles/Menu.ascx y Menu.ascx.cs.
+    // Se pinta el menú que el original muestra al perfil Administrador (Menu.ascx.cs:30-56).
+    // Solo "Procesos" (Administración) está migrado; el resto de entradas se muestra sin enlace.
+    bool esAdministrador = GestorUsuarios.ConsultarUsuarioAutenticado().IdPerfilDeUsuario == (int)PerfilDeUsuario.Administrador;
+    const string NoMigrado = "No incluido en la demo";
+}
+@if (esAdministrador)
+{
+<div class="menuPrincipal">
+    <p>Auditores</p>
+    <ul>
+        <li><span class="noMigrado" title="@NoMigrado">Procesos</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Evidencias</span></li>
+    </ul>
+ </div>
+<div class="menuPrincipal">
+    <p>Reportes</p>
+    <ul>
+        <li><span class="noMigrado" title="@NoMigrado">Dashboard</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">A.C. Proc. de Audit.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">A.C. Proc. o Subpr.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">A.C. Resp. o Usuar.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Planific. y Evidenc.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Proc. sin Audit.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Contr. sin Resp.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Camb. en Evidenc.</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Cons. de Evidenc.</span></li>
+    </ul>
+ </div>
+ <div class="menuPrincipal">
+    <p>Administración</p>
+    <ul>
+        <li><span class="noMigrado" title="@NoMigrado">Usuarios</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Sociedades</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Periodos</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Riesgos</span></li>
+        <li><a href="/Administracion/Procesos.aspx">Procesos</a></li>
+        <li><span class="noMigrado" title="@NoMigrado">Subprocesos</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Tipos de Auditoría</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Parámetros</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Áreas Responsab.</span></li>
+   </ul>
+    <ul>
+        <li><span class="noMigrado" title="@NoMigrado">Logs de Entidades</span></li>
+        <li><span class="noMigrado" title="@NoMigrado">Logs de Sistema</span></li>
+    </ul>
+ </div>
+}

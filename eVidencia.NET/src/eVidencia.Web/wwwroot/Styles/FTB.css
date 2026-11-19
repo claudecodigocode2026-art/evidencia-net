@@ -1,0 +1,34 @@
+﻿@font-face {
+    font-family: 'TelefonicaSansLight';
+    src: url('TelefonicaSansLight.otf');
+    src: local('TelefonicaSansLight'), local('TelefonicaSansLight') format('truetype');
+}
+
+@font-face {
+    font-family: 'TelefonicaSansRegular';
+    src: url('TelefonicaSansRegular.otf');
+    src: local('TelefonicaSansRegular'), local('TelefonicaSansRegular') format('truetype');
+}
+
+body {
+    margin: 3px;
+    font-family: 'TelefonicaSansRegular',Verdana, Arial, Helvetica, sans-serif;
+    font-size: 0.8em;
+}
+    body.disabled {
+        cursor: default;
+        border-color: #DDD;
+        background: #f0f0f0;
+    }
+        body.disabled h2 {
+            background: transparent !important;
+        }
+        body.disabled span {
+            background: transparent !important;
+        }
+
+
+
+   
+
+

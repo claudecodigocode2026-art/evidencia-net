@@ -1,0 +1,29 @@
+@page "/Error.aspx"
+@using Microsoft.AspNetCore.Diagnostics
+@inject IWebHostEnvironment Entorno
+@{
+    // Página de error global. En el original es eVidencias.Web/Error.aspx.
+    // No usa la plantilla común para poder mostrarse aunque falle la carga del usuario o de los datos.
+    Layout = null;
+    Exception? error = HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>eVidencia: Error</title>
+    <link href="/Styles/Site.css?v3" rel="stylesheet" type="text/css" />
+</head>
+<body class="bodymp">
+    <div class="page">
+        <div class="formulario" style="padding: 30px;">
+            <h2>Se ha producido un error</h2>
+            <p>No se ha podido completar la operación.</p>
+            @if (error != null && (Entorno.IsDevelopment() || error is ApplicationException || error is System.Security.SecurityException))
+            {
+                <p class="error">@error.Message</p>
+            }
+            <p><a href="/Administracion/Procesos.aspx">Volver a Procesos</a></p>
+        </div>
+    </div>
+</body>
+</html>

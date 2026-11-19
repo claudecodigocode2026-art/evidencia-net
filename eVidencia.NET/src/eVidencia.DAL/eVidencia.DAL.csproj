@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\eVidencia.Comun\eVidencia.Comun.csproj" />
+    <ProjectReference Include="..\eVidencia.Entidades\eVidencia.Entidades.csproj" />
+  </ItemGroup>
+</Project>
