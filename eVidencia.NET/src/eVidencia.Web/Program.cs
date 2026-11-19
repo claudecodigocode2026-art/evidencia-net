@@ -17,21 +17,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------------------------------------------
 // Configuración de la demo (appsettings.json)
-//   Datos:Modo            "Memoria" (sin base de datos) o "SqlServer"
+//   Datos:Modo            "Excel" (libro Excel con una hoja por tabla), "Memoria" (datos de ejemplo) o "SqlServer"
+//   Datos:FicheroExcel    rutas de libro separadas por ';' (relativas al proyecto web); se usa el primero que exista
 //   Datos:CadenaConexion  cadena de conexión cuando el modo es "SqlServer"
-//   Demo:UsuarioFijo      UID del usuario con el que entra la demo (debe existir en la tabla USUARIO)
+//   Demo:UsuarioFijo      UID del usuario con el que entra la demo (debe existir en la tabla USUARIO).
+//                         Vacío en los modos Excel y Memoria: entra el primer Administrador de la tabla.
 // ---------------------------------------------------------------------------------------------
-string modoDatos = builder.Configuration["Datos:Modo"] ?? "Memoria";
-string usuarioFijo = builder.Configuration["Demo:UsuarioFijo"] ?? DatosDeEjemplo.UidUsuarioDemo;
+string modoDatos = builder.Configuration["Datos:Modo"] ?? "Excel";
+string usuarioFijo = builder.Configuration["Demo:UsuarioFijo"] ?? "";
 
 builder.Services.AddRazorPages();
 
-// Las páginas escriben los caracteres acentuados tal cual, como hacía Web Forms.
+// Las páginas escriben los caracteres acentuados tal cual.
 builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o =>
     o.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All));
-
-// Usuario fijo: sustituye, solo en la demo, a la autenticación del original (Login.aspx + LogonUser).
-builder.Services.AddSingleton<IUsuarioActual>(new UsuarioFijo(usuarioFijo));
 
 if (modoDatos.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
@@ -40,6 +39,8 @@ if (modoDatos.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 #else
     string cadena = builder.Configuration["Datos:CadenaConexion"]
         ?? throw new InvalidOperationException("Falta Datos:CadenaConexion en appsettings.json.");
+    if (usuarioFijo == "")
+        throw new InvalidOperationException("En modo SqlServer hay que indicar Demo:UsuarioFijo en appsettings.json.");
     builder.Services.AddSingleton<IFabricaConexiones>(
         new FabricaConexiones(Microsoft.Data.SqlClient.SqlClientFactory.Instance, cadena));
     builder.Services.AddScoped<IRepositorioProcesos, RepositorioProcesosSql>();
@@ -49,19 +50,62 @@ if (modoDatos.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddSingleton(new InfoDemo(usuarioFijo, "SQL Server"));
 #endif
 }
-else if (modoDatos.Equals("Memoria", StringComparison.OrdinalIgnoreCase))
+else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDatos.Equals("Memoria", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddSingleton<AlmacenMemoria>();
+    AlmacenMemoria almacen;
+    string descripcion;
+
+    if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase))
+    {
+        // Datos:FicheroExcel admite varias rutas separadas por ';': se usa el primer libro que exista.
+        string configurado = builder.Configuration["Datos:FicheroExcel"]
+            ?? throw new InvalidOperationException("Falta Datos:FicheroExcel en appsettings.json.");
+        string? ruta = configurado
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(r => Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, r)))
+            .FirstOrDefault(File.Exists);
+        if (ruta != null)
+        {
+            almacen = AlmacenMemoria.DesdeExcel(ruta);
+            descripcion = almacen.Origen + " (los cambios no se guardan en el libro)";
+        }
+        else
+        {
+            // Sin libro, la demo arranca con los datos de ejemplo y lo avisa en el pie de página.
+            almacen = AlmacenMemoria.DeEjemplo();
+            descripcion = "de ejemplo: no se ha encontrado ningún libro Excel en la carpeta datos";
+        }
+    }
+    else
+    {
+        almacen = AlmacenMemoria.DeEjemplo();
+        descripcion = almacen.Origen + " (se pierden al parar la aplicación)";
+    }
+
+    if (usuarioFijo == "")
+    {
+        usuarioFijo = almacen.Usuarios
+            .Where(u => !u.Borrado && u.IdPerfilDeUsuario == (int)PerfilDeUsuario.Administrador && !string.IsNullOrEmpty(u.UID))
+            .OrderBy(u => u.IdUsuario)
+            .Select(u => u.UID!)
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException("Los datos no contienen ningún usuario con perfil Administrador.");
+    }
+
+    builder.Services.AddSingleton(almacen);
     builder.Services.AddScoped<IRepositorioProcesos, RepositorioProcesosMemoria>();
     builder.Services.AddScoped<IRepositorioSubprocesos, RepositorioSubprocesosMemoria>();
     builder.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosMemoria>();
     builder.Services.AddScoped<IRepositorioLogDeEntidades, RepositorioLogDeEntidadesMemoria>();
-    builder.Services.AddSingleton(new InfoDemo(usuarioFijo, "de ejemplo en memoria (se pierden al parar la aplicación)"));
+    builder.Services.AddSingleton(new InfoDemo(usuarioFijo, descripcion));
 }
 else
 {
-    throw new InvalidOperationException($"Datos:Modo no reconocido: '{modoDatos}'. Valores válidos: Memoria, SqlServer.");
+    throw new InvalidOperationException($"Datos:Modo no reconocido: '{modoDatos}'. Valores válidos: Excel, Memoria, SqlServer.");
 }
+
+// Usuario fijo: sustituye, solo en la demo, a la autenticación del original (Login.aspx + LogonUser).
+builder.Services.AddSingleton<IUsuarioActual>(new UsuarioFijo(usuarioFijo));
 
 // Lógica de negocio
 builder.Services.AddScoped<GestorUsuarios>();

@@ -9,3 +9,8 @@ obj/
 appsettings.Development.json
 appsettings.*.local.json
 *.bak
+
+# Libros Excel de datos: contienen datos personales reales, nunca se suben
+eVidencia.NET/datos/*.xlsx
+# Excepción: copia reducida y sin datos personales, sí se sube
+!eVidencia.NET/datos/eVidencia_BBDD_Demo_sin_datos_personales.xlsx

@@ -2,28 +2,32 @@
 @using Microsoft.AspNetCore.Diagnostics
 @inject IWebHostEnvironment Entorno
 @{
-    // Página de error global. En el original es eVidencias.Web/Error.aspx.
+    // Página de error global (en el original, eVidencias.Web/Error.aspx).
     // No usa la plantilla común para poder mostrarse aunque falle la carga del usuario o de los datos.
     Layout = null;
     Exception? error = HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
 }
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>eVidencia: Error</title>
-    <link href="/Styles/Site.css?v3" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/css/evidencia.css?v=1" />
 </head>
-<body class="bodymp">
-    <div class="page">
-        <div class="formulario" style="padding: 30px;">
-            <h2>Se ha producido un error</h2>
-            <p>No se ha podido completar la operación.</p>
-            @if (error != null && (Entorno.IsDevelopment() || error is ApplicationException || error is System.Security.SecurityException))
-            {
-                <p class="error">@error.Message</p>
-            }
-            <p><a href="/Administracion/Procesos.aspx">Volver a Procesos</a></p>
-        </div>
-    </div>
+<body>
+<div class="ev-app" data-theme="claro">
+  <main class="ev-main">
+    <section class="ev-screen ev-page">
+      <h1 class="ev-page-title">Se ha producido un error</h1>
+      <p>No se ha podido completar la operación.</p>
+      @if (error != null && (Entorno.IsDevelopment() || error is ApplicationException || error is System.Security.SecurityException))
+      {
+        <div class="ev-notice">@error.Message</div>
+      }
+      <div class="ev-actions"><a class="ev-btn ev-btn--primary" href="/Administracion/Procesos.aspx">Volver a Procesos</a></div>
+    </section>
+  </main>
+</div>
 </body>
 </html>

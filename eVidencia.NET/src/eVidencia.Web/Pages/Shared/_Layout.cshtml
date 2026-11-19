@@ -3,491 +3,68 @@
 @inject GestorUsuarios GestorUsuarios
 @inject eVidencia.Web.Servicios.InfoDemo InfoDemo
 @{
-    // Origen: eVidencias.Web/eVidencias.Master y eVidencias.Master.cs.
-    // El bloque de estilos y scripts de la cabecera es el del original, con los textos de recursos en español.
-    USUARIO usuarioAutenticado = GestorUsuarios.ConsultarUsuarioAutenticado();
+    // Estructura común de la aplicación. Diseño: mockup "eVidencia · Mockup responsive".
+    // Datos de usuario: como en eVidencias.Master.cs (usuario autenticado y su perfil).
+    USUARIO usuario = GestorUsuarios.ConsultarUsuarioAutenticado();
+    string nombreCompleto = (usuario.Nombre + " " + usuario.Apellidos).Trim();
+    string iniciales = (usuario.Nombre.Trim().FirstOrDefault().ToString() + usuario.Apellidos.Trim().FirstOrDefault()).ToUpper();
     string? scriptInicio = ViewData["ScriptInicio"] as string;
 }
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html lang="es">
 <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"]</title>
-    <meta http-equiv="Page-Enter" content="Alpha(opacity=100)" />
-    <meta http-equiv="X-UA-Compatible" content="IE=8" />
-    <link href="/Styles/Site.css?v3" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="/Scripts/css/redmond/jquery-ui-1.10.4.custom.min.css?v3" />
-    <script src="/Scripts/jquery/jquery-1.11.0.min.js" type="text/javascript"></script>
-    <script src="/Scripts/jquery/i18n/jquery.ui.datepicker-es.min.js" type="text/javascript"></script>
-    <script src="/Scripts/jquery/i18n/jquery.ui.timepicker-es.min.js" type="text/javascript"></script>
-    <script src="/Scripts/jquery/jquery-ui-1.10.4.custom.min.js" type="text/javascript"></script>
-    <script src="/Scripts/jquery/jquery-ui-timepicker-addon.js" type="text/javascript"></script>
-    <script src="/Scripts/jquery/ui.dropdownchecklist-1.4-min.js" type="text/javascript"></script>
-    <link href="/Scripts/css/toastr.css?v3" rel="stylesheet"/>
-    <script type="text/javascript" src="/Scripts/jquery/toastr.min.js"></script>
-    <script src="/Scripts/jquery/multiselectable.js" type="text/javascript"></script>
-
-    <script src="/Scripts/fileDownload/jquery.fileDownload.js" type="text/javascript"></script>
-
-    <link rel="stylesheet" type="text/css" media="screen" href="/Scripts/jqgrid/css/ui.jqgrid.css?v3" />
-    <script src="/Scripts/jqgrid/js/jquery.jqGrid.min.js" type="text/javascript"></script>
-    <script src="/Scripts/jqgrid/js/i18n/grid.locale-es.js" type="text/javascript"></script>
-
-    <style type="text/css">
-        .multiselectable div, .multiselectable select
-        {
-            width: 440px;
-        }
-        .ui-jqgrid
-        {
-            position: relative;
-            width: 100%;
-            border: 1px;
-            border-color: #f2f4ff;
-            border-style: solid;
-            font-size: 11px;
-        }
-
-        .ui-th-column, .ui-jqgrid .ui-jqgrid-htable th.ui-th-column
-        {
-            overflow: hidden;
-            white-space: nowrap;
-            text-align: left;
-            border-top: 0 none;
-            border-bottom: 0 none;
-        }
-
-        .ui-jqgrid tr.ui-row-ltr td
-        {
-            text-align: left;
-            padding-left: 10px;
-        }
-
-        .ui-jqgrid tr.jqgrow td
-        {
-            font-weight: normal;
-            overflow: hidden;
-            white-space: pre;
-            height: 22px;
-            padding: 0 2px 0 2px;
-        }
-        .ui-state-hover
-        {
-            background:#B2D6DB !important;border:1px solid #79b7e7;color:#333333;font-weight:bold;
-        }
-        .ui-state-hover div
-        {
-            color:#333333;
-        }
-        .ui-state-highlight
-        {
-            background:#fbec88 url(images/ui-bg_flat_55_fbec88_40x100.png) 50% 50% repeat-x !important;border:1px solid #363636;color:#363636;font-weight:bold;
-        }
-        .ui-priority-secondary, .ui-widget-content .ui-priority-secondary, .ui-widget-header .ui-priority-secondary
-        {
-            background: #f9f5f1;
-        }
-
-        .ui-jqgrid .ui-state-default, .ui-jqgrid .ui-widget-content .ui-state-default, .ui-jqgrid .ui-widget-header .ui-state-default
-        {
-            background: #0166ff;
-            color: #fff;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .ui-jqgrid .ui-pg-table td
-        {
-            vertical-align: middle;
-            padding: 1px;
-        }
-    </style>
-    <script type="text/javascript">
-        function MostarExcepciones(titulo, mensaje) {
-            $("#dialog-excepciones").attr("title", titulo);
-            $("#dialog-excepciones p").text(mensaje);
-            $("#dialog-excepciones").dialog({
-                modal: true,
-                width: 350,
-                buttons: {
-                    Ok: function () {
-                        $(this).dialog("close");
-                    }
-                }
-            });
-        }
-
-        function MostarNotificacion(titulo, mensaje) {
-            $("#dialog-excepciones").attr("title", titulo);
-            $("#dialog-excepciones p").text(mensaje);
-            $("#dialog-excepciones").dialog({
-                modal: true,
-                width: 350,
-                buttons: {
-                    Ok: function () {
-                        $(this).dialog("close");
-                    }
-                }
-            });
-        }
-
-        function MostrarNotificacionHtml(titulo, mensaje) {
-            $("#dialog-excepciones").attr("title", titulo);
-            $("#dialog-excepciones p").html(mensaje);
-            $("#dialog-excepciones").dialog({
-                modal: true,
-                width: 350,
-                buttons: {
-                    Ok: function () {
-                        $(this).dialog("close");
-                    }
-                }
-            });
-        }
-
-        function MostrarAlerta(mensaje, titulo) {
-            if (titulo) {
-                $("#dialog-excepciones").attr("title", titulo);
-            }
-            else {
-                $("#dialog-excepciones").attr("title", "Error");
-            }
-            $("#dialog-excepciones p").text(mensaje);
-            $("#dialog-excepciones").dialog({
-                modal: true,
-                width: 350,
-                buttons: {
-                    Ok: function () {
-                        $(this).dialog("close");
-                    }
-                }
-            });
-        }
-
-        function MostrarConfirmar(mensaje, titulo) {
-            var defer = $.Deferred();
-            if (titulo) {
-                $("#dialog-confirmar").attr("title", titulo);
-            }
-            else {
-                $("#dialog-confirmar").attr("title", "Se necesita confirmación");
-            }
-            $("#dialog-confirmar p").text(mensaje);
-            $("#dialog-confirmar").dialog({
-                modal: true,
-                width: 350,
-                buttons: {
-                    "Sí": function () {
-                        defer.resolve(true);
-                        $(this).dialog("close");
-                    },
-                    "No": function () {
-                        defer.resolve(false);
-                        $(this).dialog("close");
-                    }
-                },
-                close: function () {
-                    $(this).dialog("close");
-                }
-            });
-            return defer.promise();
-        }
-
-        function Notificar(titulo, mensaje) {
-            toastr.options = {
-                "closeButton": true,
-                "debug": false,
-                "positionClass": "toast-top-right",
-                "onclick": null,
-                "showDuration": "300",
-                "hideDuration": "1000",
-                "timeOut": "5000",
-                "extendedTimeOut": "1000",
-                "showEasing": "swing",
-                "hideEasing": "linear",
-                "showMethod": "fadeIn",
-                "hideMethod": "fadeOut"
-            };
-            toastr.success(mensaje, titulo);
-        }
-
-        $(function () { ConfigurarDatepicker(); });
-
-        function ConfigurarDatepicker() {
-            $(".datepicker").keydown(function () {
-                $(this).val('');
-                return false;
-            });
-
-            $(".datepicker").datepicker({
-                showMonthAfterYear: false,
-                changeYear: true,
-                showOn: "both",
-                buttonText: "",
-                buttonImage: "/Images/CalendarImage.png",
-                buttonImageOnly: true
-            });
-
-            $(".datetimepicker").keydown(function () {
-                $(this).val('');
-                return false;
-            });
-
-            $(".datetimepicker").datetimepicker({ //closeText: "Cerrar",
-                showMonthAfterYear: false,
-                changeYear: true,
-                showOn: "both",
-                buttonText: "",
-                buttonImage: "/Images/CalendarImage.png",
-                buttonImageOnly: true,
-            });
-        }
-
-        function ConvertirFecha(fecha) {
-            var fechaJSON;
-
-            if (fecha != null) {
-
-                var dia = fecha.getDate();
-                var mes = (fecha.getMonth() + 1);
-                var anyo = fecha.getFullYear();
-                var hora = fecha.getHours().toString();
-                var minutos = fecha.getMinutes().toString();
-
-                if (hora.length == 1) {
-                    hora = "0" + hora;
-                }
-                if (minutos.length == 1) {
-                    minutos = "0" + minutos;
-                }
-
-                fechaJSON = anyo + "-" + mes + "-" + dia + "T" + hora + ":" + minutos;     // ej Fecha formato Json"2014-08-21T22:00:00.000Z"
-            }
-            else {
-                fechaJSON = "";
-            }
-            return fechaJSON;
-        }
-
-        String.format = function () {
-            var s = arguments[0];
-            for (var i = 0; i < arguments.length - 1; i++) {
-                var reg = new RegExp("\\{" + i + "\\}", "gm");
-                s = s.replace(reg, arguments[i + 1]);
-            }
-            return s;
-        }
-
-        function CallEnterKeyFunc(key) {
-            if (key == 13) {
-                event.returnValue = false;
-                event.cancel = true;
-                Filtrar();
-            }
-            else {
-                return true;
-            }
-        }
-
-        // Guarda en una cookie la configuración del grid y los valores de los controles de la zona de filtros.
-        function GuardarConfiguracionJQGrid(IdPagina, IdJQGrid) {
-            var config = {
-                filtros: {},
-                page: $(IdJQGrid).jqGrid('getGridParam', 'page'),
-                rowNum: $(IdJQGrid).jqGrid('getGridParam', 'rowNum'),
-                sortname: $(IdJQGrid).jqGrid('getGridParam', 'sortname'),
-                sortorder: $(IdJQGrid).jqGrid('getGridParam', 'sortorder'),
-            }
-
-            // Guardamos los valores de los campos de texto y desplegables de la zona de filtros
-            $('.filtros').find('input[type=text],select').each(function (index) {
-                config.filtros[$(this).attr('id')] = $(this).val();
-            });
-
-            createCookie(IdPagina + '_gridconfig', JSON.stringify(config), 1);
-        }
-
-        // Recupera la configuración del grid en la variable gridConfig, y recupera los valores de los controles de la zona de filtros.
-        function RecuperarConfiguracionJQGrid(IdPagina, EsVolver) {
-            if (EsVolver) {
-                gridConfig = JSON.parse(readCookie(IdPagina + '_gridconfig'));
-
-                if (gridConfig == null) {
-                    eraseCookie(IdPagina + '_gridconfig');
-                    ReiniciarConfiguracionJQGrid();
-                }
-            } else {
-                eraseCookie(IdPagina + '_gridconfig');
-                ReiniciarConfiguracionJQGrid();
-            }
-
-            // Establecemos la configuración de los filtros
-            for (var propertyName in gridConfig.filtros) {
-                $('#' + propertyName).val(gridConfig.filtros[propertyName]);
-            }
-        }
-
-        // Establece la configuración inicial del JQGrid
-        function ReiniciarConfiguracionJQGrid() {
-            gridConfig = {
-                filtros: {},
-                page: 1,
-                rowNum: 20,
-                sortname: gridSortnameInicial,
-                sortorder: gridSortorderInicial
-            }
-        }
-
-        function createCookie(name, value, days) {
-            var expires;
-
-            if (days) {
-                var date = new Date();
-                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                expires = "; expires=" + date.toGMTString();
-            } else {
-                expires = "";
-            }
-            document.cookie = escape(name) + "=" + escape(value) + expires + "; path=/";
-        }
-
-        function readCookie(name) {
-            var nameEQ = escape(name) + "=";
-            var ca = document.cookie.split(';');
-            for (var i = 0; i < ca.length; i++) {
-                var c = ca[i];
-                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                if (c.indexOf(nameEQ) === 0) return unescape(c.substring(nameEQ.length, c.length));
-            }
-            return null;
-        }
-
-        function eraseCookie(name) {
-            createCookie(name, "", -1);
-        }
-
-         //función que cambia el tipo del elemento al tipo que le pasamos por parámetro, este método se debe llamar desde
-         //un $.each, porque si no machaca todos los atributos con los atributos del primer elemento
-        (function ($) {
-            $.fn.changeElementType = function (newType) {
-                var attrs = {};
-                if(this.length > 0){
-                    $.each(this[0].attributes, function (idx, attr) {
-                        attrs[attr.nodeName] = attr.nodeValue;
-                    });
-
-                    this.replaceWith(function () {
-                        return $("<" + newType + "/>", attrs).append($(this).contents());
-                    });
-                }
-            }
-        })(jQuery);
-
-    </script>
-
-     <script type="text/javascript">
-         // Configuración global de jqGrid
-         $.extend(jQuery.jgrid.defaults, {
-            datatype: 'json',
-            mtype: 'POST',
-            altRows: true,
-            rowNum: 20,
-            rowList: [10, 20, 30, 60, 120],
-            caption: '',
-            gridView: true,
-            autowidth: true,
-            height: 'auto',
-            viewrecords: true
-        });
-
-        function htmlEncode(cellvalue, options, rowObject) {
-            if (cellvalue) {
-                return jQuery('<div/>').text(cellvalue).html();
-            } else {
-                return '';
-            }
-        }
-     </script>
-    <style type="text/css">
-        /* Añadido por la demo: aviso de alcance y entradas de menú no migradas. No existe en el original. */
-        .demoAviso { font-size: 11px; color: #ffffff; padding: 6px 0 0 0; }
-        .menuPrincipal li span.noMigrado { display: block; padding-left: 15px; color: #9a9a9a; cursor: default; }
-    </style>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/css/evidencia.css?v=1" />
+    <script src="/js/evidencia.js?v=1"></script>
     @await RenderSectionAsync("head", required: false)
 </head>
-<body class="bodymp">
-        <div class="page">
-            <div class="header">
-                <div class="headerInferior">
-                    <div class="customLogo">
-                        <img alt="Logo" title="Logo" src="/Images/LogoTelefonica.png" />
-			        </div>
-                    <div class="bienvenida">
-                        <div class="banderas">
-                           <img src="/Images/flag-es.png" alt="Español" />
-                           <img src="/Images/flag-br.png" alt="Português" title="Idioma no incluido en la demo" />
-                           <img src="/Images/flag-gb.png" alt="English" title="Idioma no incluido en la demo" />
-                        </div>
-                        <div class="mensajeBienvenida">
-                                <div>
-                                    <span style="font-weight:bold;">Bienvenido</span>
-                                    &nbsp;
-                                    @(usuarioAutenticado.Apellidos + ", " + usuarioAutenticado.Nombre)
-                                </div>
-                                <span style="font-weight:bold;">Perfil: </span>
-                                    &nbsp;
-                                @(usuarioAutenticado.PERFIL_DE_USUARIO?.Nombre)
-                                <br />
-                              <span>@DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
-                                <br />
-                                <div style=" padding-top: 7px;">
-                                   <a href="#" onclick="return false;" title="Usuario fijo: no hay inicio ni cierre de sesión en la demo"><b>Cerrar Sesión</b></a>
-                                </div>
-                              </div>
-
-                              <div class="iconaBienvenida">
-                                    <img alt="usuario" src="/Images/img_info_usuario.gif" /> </div><a class="tituloEvidencia" href="/Administracion/Procesos.aspx">eVidencia</a></div></div></div><div class="body">
-                <div class="cuerpo">
-                        <div class="menuEntidades">
-                            <partial name="_Menu" />
-                        </div>
-                        <div class="detalleEntidad">
-                            @RenderBody()
-                        </div>
-                </div>
-
-                <div class="clear">
-                </div>
-
-            </div>
-
-            <div class="footer">
-                <div id="pie">
-			        <div id="pie-interior">
-				    <div id="copy">
-					    <ul>
-						    <li class="copy">© Telefónica S.A.</li>
-                            <li>Todos los derechos reservados</li>
-					    </ul>
-					    <div class="clear"></div>
-                        <div class="demoAviso">Demo de migración a .NET @InfoDemo.VersionNet · Funcionalidad migrada: Administración de Procesos · Usuario fijo: @InfoDemo.UsuarioFijo · Datos: @InfoDemo.DescripcionDatos</div>
-				    </div>
-			    </div>
-		    </div>
+<body>
+<div class="ev-app" data-theme="claro">
+  <div class="ev-shell">
+    <header class="ev-topbar">
+      <button type="button" class="ev-btn ev-btn--ghost ev-btn--icon ev-menu-btn" aria-label="Abrir menú" aria-expanded="false"><svg class="ev-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+      <nav class="ev-tabs" aria-label="Módulos">
+        <button type="button" class="ev-tab" data-sec="auditores" aria-current="false"><svg class="ev-i ev-tab__i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v3H9zM9 4.5H6V21h12V4.5h-3M9 11h6M9 15h6"></path></svg><span>Auditores</span></button>
+        <button type="button" class="ev-tab" data-sec="reportes" aria-current="false"><svg class="ev-i ev-tab__i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg><span>Reportes</span></button>
+        <button type="button" class="ev-tab is-on" data-sec="administracion" aria-current="page"><svg class="ev-i ev-tab__i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg><span>Administración</span></button>
+      </nav>
+      <div class="ev-topright">
+        <span class="ev-avatar" title="@nombreCompleto">@iniciales</span>
+        <button type="button" class="ev-btn ev-btn--ghost ev-btn--icon" aria-label="Cerrar Sesión" title="Usuario fijo: no hay inicio ni cierre de sesión en la demo"><svg class="ev-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10"></path></svg></button>
+        <img class="ev-toplogo ev-desktop-only" src="/img/telefonica-logo.png" alt="Telefónica" />
+        <span class="ev-topsep ev-desktop-only" aria-hidden="true"></span>
+        <a class="ev-wordmark" href="/Administracion/Procesos.aspx" aria-label="eVidencia"><span class="ev-wordmark__dot"></span><span>eVidencia</span></a>
+      </div>
+    </header>
+    <nav class="ev-nav" aria-label="Menú principal">
+      <button type="button" class="ev-btn ev-btn--ghost ev-btn--icon ev-nav__close" aria-label="Cerrar menú"><svg class="ev-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      <partial name="_Menu" />
+      <div class="ev-nav__foot">
+        <span class="ev-nav__user"><b>@nombreCompleto</b>@(usuario.PERFIL_DE_USUARIO?.Nombre)</span>
+        <span class="ev-today">@DateTime.Now.ToString("dddd, d 'de' MMMM 'de' yyyy")</span>
+        <div class="ev-flags">
+          <button type="button" class="ev-flagbtn" aria-label="Español" aria-pressed="true" title="Español"><img class="ev-flag is-on" src="/img/flag-es.png" alt="" /></button>
+          <button type="button" class="ev-flagbtn" aria-label="Português" aria-pressed="false" title="Idioma no incluido en la demo"><img class="ev-flag" src="/img/flag-br.png" alt="" /></button>
+          <button type="button" class="ev-flagbtn" aria-label="English" aria-pressed="false" title="Idioma no incluido en la demo"><img class="ev-flag" src="/img/flag-gb.png" alt="" /></button>
         </div>
-        </div>
-        <div id="dialog-excepciones" title="Error" style="display: none;">
-          <p>
-          </p>
-        </div>
-        <div id="dialog-confirmar" title="Confirmar" style="display: none;">
-          <p>
-          </p>
-        </div>
-    @if (!string.IsNullOrEmpty(scriptInicio))
-    {
-        <script type="text/javascript">
-            @Html.Raw(scriptInicio)
-        </script>
-    }
+        <button type="button" class="ev-btn ev-btn--secondary" title="Usuario fijo: no hay inicio ni cierre de sesión en la demo"><svg class="ev-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10"></path></svg>Cerrar Sesión</button>
+      </div>
+    </nav>
+    <main class="ev-main">
+      @RenderBody()
+      <footer class="ev-foot">
+        <span>© Telefónica S.A.</span><span aria-hidden="true">·</span><span>Todos los derechos reservados</span>
+        <span class="ev-foot__demo">Demo de migración a .NET @InfoDemo.VersionNet · Funcionalidad migrada: Administración de Procesos · Usuario fijo, sin pantalla de acceso · Datos: @InfoDemo.DescripcionDatos</span>
+      </footer>
+    </main>
+  </div>
+  @if (!string.IsNullOrEmpty(scriptInicio))
+  {
+    <script>document.addEventListener('DOMContentLoaded', function () { @Html.Raw(scriptInicio) });</script>
+  }
+</div>
 </body>
 </html>
