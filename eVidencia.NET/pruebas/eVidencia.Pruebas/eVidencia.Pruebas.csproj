@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\eVidencia.Comun\eVidencia.Comun.csproj" />
+    <ProjectReference Include="..\..\src\eVidencia.Entidades\eVidencia.Entidades.csproj" />
+    <ProjectReference Include="..\..\src\eVidencia.DAL\eVidencia.DAL.csproj" />
+    <ProjectReference Include="..\..\src\eVidencia.BLL\eVidencia.BLL.csproj" />
+  </ItemGroup>
+</Project>

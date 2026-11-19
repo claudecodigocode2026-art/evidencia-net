@@ -1,0 +1,101 @@
+import sys, json
+from playwright.sync_api import sync_playwright
+B='http://localhost:5080'; out='/home/claude/capturas/'
+res=[]; fallos=[]; consola=[]
+def ok(n,c): res.append((n,bool(c))); print(('OK    ' if c else 'FALLO ')+n)
+with sync_playwright() as p:
+    b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
+    pg=b.new_page(viewport={'width':1280,'height':900})
+    pg.on('requestfailed',lambda r: fallos.append(r.url))
+    pg.on('response',lambda r: fallos.append(f'{r.status} {r.url}') if r.status>=400 else None)
+    pg.on('console',lambda m: consola.append(m.text) if m.type=='error' else None)
+    pg.on('pageerror',lambda e: consola.append('pageerror: '+str(e)))
+    pg.goto(B+'/'); pg.wait_for_selector('#grid tr.jqgrow')
+    ok('la raíz lleva al listado de Procesos', pg.url.endswith('/Administracion/Procesos.aspx'))
+    ok('título de la página', pg.title()=='eVidencia: Procesos')
+    filas=lambda: pg.locator('#grid tr.jqgrow').count()
+    ok('listado con 20 filas en la primera página', filas()==20)
+    ok('paginador: 26 registros', '26' in pg.locator('#paginador').inner_text())
+    ok('cabecera: usuario y perfil', 'Usuario, Demo' in pg.locator('.mensajeBienvenida').inner_text() and 'Administrador' in pg.locator('.mensajeBienvenida').inner_text())
+    ok('acentos correctos en el listado', pg.locator('#grid tr.jqgrow').nth(0).inner_text().find('Planificación estratégica')>=0)
+    pg.screenshot(path=out+'01_listado.png')
+    # filtro
+    pg.fill('#txtNombreFiltro','gestión'); pg.click('#btnFiltrar'); pg.wait_for_timeout(700)
+    ok('filtro por nombre: 7 filas', filas()==7)
+    pg.screenshot(path=out+'02_filtro.png')
+    pg.click('#btnBorrarFiltros'); pg.wait_for_timeout(700)
+    ok('borrar filtros: vuelve a 20 filas', filas()==20 and pg.input_value('#txtNombreFiltro')=='')
+    # filtro con Intro
+    pg.fill('#txtCodigoFiltro','EJ-2'); pg.press('#txtCodigoFiltro','Enter'); pg.wait_for_timeout(700)
+    ok('filtro por código con la tecla Intro: 7 filas', filas()==7 and pg.url.endswith('Procesos.aspx'))
+    pg.click('#btnBorrarFiltros'); pg.wait_for_timeout(700)
+    # ordenar por nombre
+    pg.click('#jqgh_grid_Nombre'); pg.wait_for_timeout(700)
+    ok('ordenar por la columna Nombre', pg.locator('#grid tr.jqgrow').nth(0).inner_text().find('Activos fijos')>=0)
+    # página 2
+    pg.click('#next_paginador'); pg.wait_for_timeout(700)
+    ok('página siguiente: 6 filas', filas()==6)
+    # editar sin seleccionar
+    pg.click('#btnEditar'); pg.wait_for_timeout(400)
+    ok('editar sin seleccionar fila: aviso', pg.locator('#dialog-excepciones').is_visible() and 'No se ha seleccionado ninguna fila' in pg.locator('#dialog-excepciones').inner_text())
+    pg.locator('.ui-dialog-buttonset button').first.click()
+    # crear: validación
+    pg.click('#btnCrear'); pg.wait_for_selector('#txtCodigo')
+    ok('alta: abre Proceso.aspx?accion=crear', 'Proceso.aspx?accion=crear' in pg.url and pg.title()=='eVidencia: Proceso')
+    ok('desplegable con 14 tipos y una opción vacía', pg.locator('#ddTipoProceso option').count()==15)
+    pg.click('#btnGuardar'); pg.wait_for_selector('#valSumProceso')
+    t=pg.locator('#valSumProceso').inner_text()
+    ok('validación: tres campos obligatorios', all(x in t for x in ['El campo Código es obligatorio','El campo Nombre es obligatorio','El campo Tipo de Proceso es obligatorio']))
+    pg.screenshot(path=out+'03_validacion.png')
+    # crear duplicado
+    pg.fill('#txtCodigo','EJ-05'); pg.fill('#txtNombre','Duplicado'); pg.select_option('#ddTipoProceso','11'); pg.click('#btnGuardar'); pg.wait_for_timeout(600)
+    ok('alta con código repetido: diálogo de error de negocio', pg.locator('#dialog-excepciones').is_visible() and 'Ya existe otro proceso con este mismo código' in pg.locator('#dialog-excepciones').inner_text())
+    ok('tras el error se conservan los datos tecleados', pg.input_value('#txtNombre')=='Duplicado')
+    pg.screenshot(path=out+'04_codigo_repetido.png')
+    pg.locator('.ui-dialog-buttonset button').first.click()
+    # crear correcto
+    pg.fill('#txtCodigo','DEMO-01'); pg.fill('#txtNombre','Proceso creado en la demo'); pg.click('#btnGuardar'); pg.wait_for_selector('#toast-container', timeout=5000)
+    ok('alta correcta: aviso "Registro creado con éxito"', 'Registro creado con éxito' in pg.locator('#toast-container').inner_text())
+    ok('tras el alta la pantalla queda en edición del nuevo proceso', pg.input_value('#txtCodigo')=='DEMO-01' and pg.input_value('input[name=hdnAccion]')=='Editar')
+    pg.screenshot(path=out+'05_alta.png')
+    # modificar
+    pg.fill('#txtNombre','Proceso modificado en la demo'); pg.click('#btnGuardar'); pg.wait_for_selector('#toast-container', timeout=5000)
+    ok('edición correcta: aviso "Registro actualizado con éxito"', 'Registro actualizado con éxito' in pg.locator('#toast-container').inner_text())
+    pg.click('#btnVolver'); pg.wait_for_selector('#grid tr.jqgrow')
+    ok('Volver regresa al listado', pg.url.endswith('/Administracion/Procesos.aspx'))
+    pg.fill('#txtCodigoFiltro','DEMO'); pg.click('#btnFiltrar'); pg.wait_for_timeout(700)
+    ok('el proceso nuevo aparece en el listado con el nombre modificado', filas()==1 and 'Proceso modificado en la demo' in pg.locator('#grid tr.jqgrow').first.inner_text())
+    # editar con doble clic
+    pg.locator('#grid tr.jqgrow').first.dblclick(); pg.wait_for_selector('#txtCodigo')
+    ok('doble clic abre la edición con los datos', 'accion=editar' in pg.url and pg.input_value('#txtNombre')=='Proceso modificado en la demo' and pg.input_value('#ddTipoProceso')=='11')
+    pg.click('#btnVolver'); pg.wait_for_selector('#grid tr.jqgrow')
+    ok('al volver se recupera el filtro del listado', pg.input_value('#txtCodigoFiltro')=='DEMO' and filas()==1)
+    # eliminar
+    pg.locator('#grid tr.jqgrow').first.click(); pg.click('#btnEliminar'); pg.wait_for_timeout(400)
+    ok('eliminar pide confirmación con el nombre', pg.locator('#dialog-confirmar').is_visible() and 'eliminar el registro Proceso modificado en la demo' in pg.locator('#dialog-confirmar').inner_text())
+    pg.screenshot(path=out+'06_confirmar_baja.png')
+    pg.locator('.ui-dialog-buttonset button', has_text='Sí').click(); pg.wait_for_selector('#toast-container', timeout=5000)
+    ok('baja correcta: aviso "Registro eliminado con éxito"', 'Registro eliminado con éxito' in pg.locator('#toast-container').inner_text())
+    pg.wait_for_timeout(700)
+    ok('tras la baja se mantiene el filtro y el proceso ya no aparece', pg.input_value('#txtCodigoFiltro')=='DEMO' and filas()==0)
+    pg.click('#btnBorrarFiltros'); pg.wait_for_timeout(700)
+    ok('sin filtros el listado vuelve a 26 registros', '26' in pg.locator('#paginador').inner_text() and filas()==20)
+    # eliminar bloqueado
+    pg.fill('#txtCodigoFiltro','EJ-01'); pg.click('#btnFiltrar'); pg.wait_for_timeout(700)
+    pg.locator('#grid tr.jqgrow', has_text='EJ-01').first.click(); pg.click('#btnEliminar'); pg.wait_for_timeout(400)
+    pg.locator('.ui-dialog-buttonset button', has_text='Sí').click(); pg.wait_for_timeout(900)
+    ok('baja de un proceso con procesos asociados: se rechaza', pg.locator('#dialog-excepciones').is_visible() and 'El Proceso tiene procesos asociados' in pg.locator('#dialog-excepciones').inner_text())
+    pg.screenshot(path=out+'07_baja_rechazada.png')
+    pg.locator('.ui-dialog-buttonset button').first.click()
+    pg.fill('#txtCodigoFiltro','EJ-01'); pg.click('#btnFiltrar'); pg.wait_for_timeout(700)
+    ok('el proceso rechazado sigue en el listado', filas()==1)
+    # errores
+    r=pg.goto(B+'/Administracion/Proceso.aspx?accion=editar&IdProceso=abc')
+    ok('parámetro IdProceso no válido: página de error', r.status==500 and 'Formato del parámetro IdProceso no válido' in pg.content())
+    r=pg.goto(B+'/Administracion/Proceso.aspx?accion=editar&IdProceso=9999')
+    ok('proceso inexistente: página de error', r.status==500 and 'No existe el proceso' in pg.content())
+    b.close()
+esperados=[f for f in fallos if 'Proceso.aspx?accion=editar&IdProceso=' not in f]
+print('peticiones fallidas (no esperadas):', esperados)
+print('errores de consola:', [c for c in consola if '500' not in c])
+n=sum(1 for _,c in res if c); print(f'Resultado: {n} correctas, {len(res)-n} fallidas')

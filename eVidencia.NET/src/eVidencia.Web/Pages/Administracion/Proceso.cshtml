@@ -1,0 +1,97 @@
+@page "/Administracion/Proceso.aspx"
+@model eVidencia.Web.Pages.Administracion.ProcesoModel
+@*
+    Alta y edición de un Proceso. Origen: eVidencias.Web/Administracion/Proceso.aspx.
+*@
+@section head {
+<script type="text/javascript">
+    $(function () {
+        $('#btnVolver').click(function () { Volver(); return false; });
+    });
+
+    function Volver() {
+        window.location = '/Administracion/Procesos.aspx';
+    }
+
+</script>
+}
+<form method="post">
+ <input type="hidden" name="hdnAccion" value="@Model.Accion" />
+ <input type="hidden" name="hdnIdProceso" value="@Model.IdProceso" />
+ <div class="formulario">
+    <h2><span id="lblTitle">Proceso</span></h2>
+     <div id="pnlValidationSumary">
+        @if (Model.ErroresDeValidacion.Count > 0)
+        {
+          <div id="valSumProceso" class="error">
+              Hay errores en el formulario, por favor, revise los siguientes campos:
+              <ul>
+                @foreach (string error in Model.ErroresDeValidacion)
+                {
+                  <li>@error</li>
+                }
+              </ul>
+          </div>
+        }
+     </div>
+     <div id="pnlProceso">
+        <table style="width: 70%">
+            <tr>
+                <td>
+                    <table class="field">
+                         <tr>
+                            <td> <label for="txtCodigo" id="lblCodigo" style="display:inline-block;width:150px;">Código</label></td>
+                        </tr>
+                        <tr>
+                            <td> <input name="txtCodigo" type="text" maxlength="10" id="txtCodigo" class="field" style="width:100px;" value="@Model.Codigo" />
+                                 @if (Model.ErrorEnCodigo)
+                                 {
+                                    <span class="asteriscoValidadores">*</span>
+                                 }
+                             </td>
+                        </tr>
+                    </table>
+                    <table class="field">
+                        <tr>
+                            <td> <label for="txtNombre" id="lblNombre" style="display:inline-block;width:250px;">Nombre</label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input name="txtNombre" type="text" id="txtNombre" class="field" style="width:350px;" value="@Model.Nombre" />
+                                @if (Model.ErrorEnNombre)
+                                {
+                                    <span class="asteriscoValidadores">*</span>
+                                }
+                             </td>
+                        </tr>
+                    </table>
+                     <table class="field">
+                        <tr>
+                            <td> <label for="ddTipoProceso" id="lblTipoProceso" style="display:inline-block;width:250px;">Tipo de Proceso</label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <select name="ddTipoProceso" id="ddTipoProceso">
+                                    <option value="-1" selected="@(Model.TipoProceso == "-1")"></option>
+                                    @foreach (var tipo in Model.TiposDeProceso)
+                                    {
+                                        <option value="@tipo.IdTipoDeProceso" selected="@(Model.TipoProceso == tipo.IdTipoDeProceso.ToString())">@tipo.Nombre</option>
+                                    }
+                                </select>
+                                @if (Model.ErrorEnTipoProceso)
+                                {
+                                    <span class="asteriscoValidadores">*</span>
+                                }
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+     </div>
+     <div id="pnlBtnAcciones" class="botoneraAcciones EVacciones" style="width:100%;">
+        <input type="submit" name="btnGuardar" value="Guardar" id="btnGuardar" />
+        <input type="submit" name="btnVolver" value="Volver" id="btnVolver" />
+     </div>
+</div>
+</form>

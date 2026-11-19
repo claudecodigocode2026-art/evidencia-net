@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!--
+    El proveedor de SQL Server (Microsoft.Data.SqlClient) es el único paquete NuGet de la solución.
+    Con -p:SinSqlServer=true se compila sin él (solo modo "Memoria"); se usa para compilar
+    en entornos sin acceso a nuget.org.
+  -->
+  <PropertyGroup Condition="'$(SinSqlServer)' == 'true'">
+    <DefineConstants>$(DefineConstants);SIN_SQLSERVER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(SinSqlServer)' != 'true'">
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\eVidencia.Comun\eVidencia.Comun.csproj" />
+    <ProjectReference Include="..\eVidencia.Entidades\eVidencia.Entidades.csproj" />
+    <ProjectReference Include="..\eVidencia.DAL\eVidencia.DAL.csproj" />
+    <ProjectReference Include="..\eVidencia.BLL\eVidencia.BLL.csproj" />
+  </ItemGroup>
+</Project>

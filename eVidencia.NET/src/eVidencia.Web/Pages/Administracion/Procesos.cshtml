@@ -1,0 +1,172 @@
+@page "/Administracion/Procesos.aspx"
+@model eVidencia.Web.Pages.Administracion.ProcesosModel
+@using eVidencia.Web.Servicios
+@*
+    Listado de Procesos. Origen: eVidencias.Web/Administracion/Procesos.aspx.
+    El script es el del original; solo cambian las expresiones de servidor (textos y EsVolver).
+    Fuera del alcance de la demo: botón "Exportar a Excel".
+*@
+@section head {
+<script type="text/javascript">
+        var gridConfig; // Contiene la configuración del grid
+        var gridSortnameInicial = 'Codigo'; // Orden inicial del grid
+        var gridSortorderInicial = 'asc'; // Dirección del orden del grid
+        var gridIdPagina = 'Administracion_Procesos'; // Identificador de la página (a partir de la ruta de la página)
+
+        $(function () {
+        // Es true si la página de origen es la actual o la página de detalle. Valor establecido desde .NET
+        var EsVolver = @(Model.EsVolver ? "true" : "false");
+
+        RecuperarConfiguracionJQGrid(gridIdPagina, EsVolver);
+
+        // Inicialización de jQGrid
+        var urlGrid = '/Administracion/AdministracionService.asmx/ConsultarGridProcesos';
+        $('#grid').jqGrid({
+            url: urlGrid,
+            colNames: [' @WebGlobal.ProcesosIdProceso',
+                        '@WebGlobal.ProcesosCodigo',
+                        '@WebGlobal.ProcesosNombre',
+                        '@WebGlobal.ProcesosTipoProceso'],
+            colModel: [
+               	{ name: 'IdProceso', index: 'IdProceso', width: 0, hidden: true },
+               	{ name: 'Codigo', index: 'Codigo', width: 90 },
+                { name: 'Nombre', index: 'Nombre', width: 90 },
+                { name: 'TipoDeProceso', index: 'TIPO_DE_PROCESO.Nombre', width: 90 },
+            ],
+            pager: '#paginador',
+            sortname: gridConfig.sortname,
+            sortorder: gridConfig.sortorder,
+            page: gridConfig.page,
+            rowNum : gridConfig.rowNum,
+            postData: {
+                filtro: JSON.stringify(ConstruirFiltro())
+            },
+             onSortCol: function (index, iCol, sortorder, e) {
+                var ordenCampo = index;
+                var ordenAscDesc = sortorder;
+                var ordenar = ordenCampo + ' ' + ordenAscDesc;
+                $('#hdnOrden').val(ordenar);
+            },
+            ondblClickRow: Editar
+        });
+
+        $('#grid').jqGrid('navGrid', '#paginador', { search: false, edit: false, add: false, del: false });
+
+        // Configuración de los eventos de los botones   
+        $('#btnCrear').click(Crear);
+        $('#btnEditar').click(function () { Editar(); return false; });
+        $('#btnFiltrar').click(Filtrar);
+        $('#btnBorrarFiltros').click(BorrarFiltros);
+    });
+
+    // Funciones de gestión de los eventos
+    function Crear() {
+        GuardarConfiguracionJQGrid(gridIdPagina, '#grid');
+        window.location = 'Proceso.aspx?accion=crear';
+
+    }
+
+    function Editar() {
+        var id = $('#grid').jqGrid('getGridParam', 'selrow');
+        if (id) {
+            var rowData = $("#grid").jqGrid('getRowData', id);
+            GuardarConfiguracionJQGrid(gridIdPagina, '#grid');
+            window.location = 'Proceso.aspx?accion=editar&IdProceso=' + rowData.IdProceso;
+        } else {
+            MostrarAlerta('@WebGlobal.NoSeHaSeleccionadoNingunaFila');
+        }
+    }
+
+    function Filtrar(){
+        var filtro = ConstruirFiltro();
+        $('#grid').jqGrid('setGridParam', { postData: { filtro: JSON.stringify(filtro) }, page: 1 }).trigger("reloadGrid");
+    }
+
+    function ConstruirFiltro()  {
+        var filtroCodigo = $('#txtCodigoFiltro').val();
+        var filtroNombre = $('#txtNombreFiltro').val();
+       
+        var filtro = {
+            Codigo: filtroCodigo == '' ? null : filtroCodigo,
+            Nombre: filtroNombre == '' ? null : filtroNombre
+        }
+      return filtro;
+    }
+
+    function BorrarFiltros() {
+        $('#txtCodigoFiltro').val('');
+        $('#txtNombreFiltro').val('');
+        $('#grid').jqGrid('setGridParam', { postData: { filtro: '' }, page: 1 }).trigger("reloadGrid");
+    }
+
+    function Eliminar() {
+        var id = $('#hdnId').val();
+        if (id) {
+            return true;
+        }
+        else {
+            id = $('#grid').jqGrid('getGridParam', 'selrow');
+            if (id) {
+                var rowData = $("#grid").jqGrid('getRowData', id);
+                MostrarConfirmar(String.format('@Html.Raw(WebGlobal.SeguroDeseaEliminar)', rowData.Nombre)).then(function (respuesta) {
+                    if (respuesta) {
+                        $('#hdnId').val(rowData.IdProceso);
+                        $('#btnEliminar').click();
+                    }
+                });
+            }
+            else {
+                MostrarAlerta('@WebGlobal.NoSeHaSeleccionadoNingunaFila');
+            }
+        }
+        return false;
+    }
+
+    // La función Exportar() del original (exportación a Excel) queda fuera del alcance de la demo.
+    </script>
+}
+<form method="post">
+    <div class="formulario">
+    <h2><span id="lblTitle">Procesos</span></h2>
+
+    <div style="width:100%;">
+         <table class="botonera filtros">
+            <tr>
+                <td>
+                    <span id="lblCodigoFiltro">Código</span>
+                    <input name="txtCodigoFiltro" type="text" maxlength="10" id="txtCodigoFiltro" value="" onkeydown="return CallEnterKeyFunc(event.keyCode);" />
+
+                    <span id="lblNombrefiltro">Nombre</span>
+                    <input name="txtNombreFiltro" type="text" maxlength="50" id="txtNombreFiltro" value="" onkeydown="return CallEnterKeyFunc(event.keyCode);" />
+                </td>
+            </tr>
+            <tr>
+                <td align="right">
+                    <input type="button" id="btnFiltrar" value="@WebGlobal.btnFiltrar"/>
+                    <input type="button" id="btnBorrarFiltros"  value="@WebGlobal.btnBorrarFiltros"/>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+     <div style="width:100%;">
+         <table class="botonera" >
+             <tr>
+                 <td>
+                     <input type="button" name="btnCrear" value="Crear" onclick="return false;" id="btnCrear" />
+                     <input type="button" name="btnEditar" value="Editar" onclick="return false;" id="btnEditar" />
+                     <input type="submit" name="btnEliminar" value="Eliminar" onclick="return Eliminar();" id="btnEliminar" formaction="/Administracion/Procesos.aspx?handler=Eliminar" />
+                     <input type="hidden" name="hdnId" id="hdnId" value="" />
+                     <input type="hidden" name="hdnFiltro" id="hdnFiltro" />
+                     <input type="hidden" name="hdnOrden" id="hdnOrden" />
+                </td>
+             </tr>
+         </table>
+     </div>
+     <div style="width:100%;">
+         <table id="grid"></table>
+      </div>
+
+    <div id="paginador"></div>
+</div>
+</form>
