@@ -8,4 +8,4 @@ Repositorio del proyecto de migración de eVidencia a .NET 10.
 
 - No se sube el código original de eVidencia (PROD/CERT), solo el código nuevo.
 - No se suben credenciales ni cadenas de conexión reales.
-- No se suben datos personales: el libro Excel de datos se copia a mano a `eVidencia.NET/datos/` y está excluido en `.gitignore`.
+- No se suben datos personales: el libro Excel completo está excluido en `.gitignore`; solo se sube su copia sin datos personales (`eVidencia.NET/datos/LEEME.md`).

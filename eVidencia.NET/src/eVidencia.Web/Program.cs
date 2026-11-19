@@ -18,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------------------------------------------------------------------------------------------
 // Configuración de la demo (appsettings.json)
 //   Datos:Modo            "Excel" (libro Excel con una hoja por tabla), "Memoria" (datos de ejemplo) o "SqlServer"
-//   Datos:FicheroExcel    ruta del libro cuando el modo es "Excel" (relativa a la carpeta del proyecto web)
+//   Datos:FicheroExcel    rutas de libro separadas por ';' (relativas al proyecto web); se usa el primero que exista
 //   Datos:CadenaConexion  cadena de conexión cuando el modo es "SqlServer"
 //   Demo:UsuarioFijo      UID del usuario con el que entra la demo (debe existir en la tabla USUARIO).
 //                         Vacío en los modos Excel y Memoria: entra el primer Administrador de la tabla.
@@ -57,10 +57,14 @@ else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDa
 
     if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase))
     {
+        // Datos:FicheroExcel admite varias rutas separadas por ';': se usa el primer libro que exista.
         string configurado = builder.Configuration["Datos:FicheroExcel"]
             ?? throw new InvalidOperationException("Falta Datos:FicheroExcel en appsettings.json.");
-        string ruta = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, configurado));
-        if (File.Exists(ruta))
+        string? ruta = configurado
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(r => Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, r)))
+            .FirstOrDefault(File.Exists);
+        if (ruta != null)
         {
             almacen = AlmacenMemoria.DesdeExcel(ruta);
             descripcion = almacen.Origen + " (los cambios no se guardan en el libro)";
@@ -69,7 +73,7 @@ else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDa
         {
             // Sin libro, la demo arranca con los datos de ejemplo y lo avisa en el pie de página.
             almacen = AlmacenMemoria.DeEjemplo();
-            descripcion = "de ejemplo: no se ha encontrado el libro Excel " + Path.GetFileName(ruta);
+            descripcion = "de ejemplo: no se ha encontrado ningún libro Excel en la carpeta datos";
         }
     }
     else

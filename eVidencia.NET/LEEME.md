@@ -4,7 +4,7 @@ Primera funcionalidad de eVidencia traspasada a .NET: listado de Procesos con fi
 
 - **Funcionalidad y reglas:** las del código original (rama `PROD`, commit `86c33f3`, versión web 1.15.0.0).
 - **Diseño de pantallas:** el del mockup «eVidencia · Mockup responsive · aplicación completa» (escritorio y móvil).
-- **Datos:** el libro Excel `eVidencia_BBDD_Mock_CERT_20261112.xlsx`, hasta nuevo aviso.
+- **Datos:** el libro Excel `eVidencia_BBDD_Mock_CERT_20261112.xlsx`, hasta nuevo aviso; en el repositorio, su copia sin datos personales.
 
 ## 1. Cómo ejecutarla
 
@@ -20,12 +20,14 @@ El origen de datos se elige en `src/eVidencia.Web/appsettings.json`, clave `Dato
 
 | Modo | Qué usa |
 |---|---|
-| `Excel` (por defecto) | El libro de `datos/`, con una hoja por tabla. Los cambios se quedan en memoria; no se escriben en el libro. |
+| `Excel` (por defecto) | El primer libro que encuentre en `datos/`, con una hoja por tabla. Los cambios se quedan en memoria; no se escriben en el libro. |
 | `Memoria` | 26 procesos de ejemplo inventados. |
 | `SqlServer` | Una base de datos de eVidencia (`Datos:CadenaConexion`). Requiere `Demo:UsuarioFijo`. |
 
-**El libro Excel no está en el repositorio** porque contiene datos personales reales (ver `datos/LEEME.md`).
-Hay que copiarlo a mano a la carpeta `datos/`. Si no está, la demo arranca con los datos de ejemplo y lo avisa en el pie de página.
+El libro completo **no está en el repositorio** porque contiene datos personales reales. En su lugar se incluye
+`datos/eVidencia_BBDD_Demo_sin_datos_personales.xlsx`: los mismos procesos, tipos, subprocesos y procesos asociados,
+con los 44 usuarios sustituidos por ficticios. Si el libro completo se copia a `datos/`, la demo lo usa con preferencia.
+Detalle en `datos/LEEME.md`.
 
 **Usuario de la demo:** no hay pantalla de acceso. Entra el usuario indicado en `Demo:UsuarioFijo` (su UID);
 si está vacío, el primer usuario con perfil Administrador de la tabla `USUARIO`.
