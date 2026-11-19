@@ -45,7 +45,7 @@ No guardes la cadena de conexión real en ningún ZIP ni repositorio.
 6. Baja: seleccionar el proceso creado, Eliminar y confirmar.
 7. Regla de negocio: intentar eliminar `EJ-01` ("El Proceso tiene procesos asociados").
 
-Las capturas de cada paso están en el ZIP de la demo; no se han subido al repositorio (ver `docs\RECURSOS_CORPORATIVOS.md`).
+Capturas de cada paso en `docs\capturas`.
 
 ## 4. Qué se ha migrado y de dónde
 
