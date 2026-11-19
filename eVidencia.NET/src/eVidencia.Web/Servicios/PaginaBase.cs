@@ -1,11 +1,12 @@
 using System.Security;
-using System.Text.Encodings.Web;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace eVidencia.Web.Servicios;
 
 /// <summary>
 /// Comportamiento común de las páginas. Origen: eVidencias.Web/BasePage.cs y Util.cs.
+/// La presentación (diálogo y aviso) es la del mockup responsive; los textos son los del original.
 /// </summary>
 public abstract class PaginaBase : PageModel
 {
@@ -29,14 +30,21 @@ public abstract class PaginaBase : PageModel
                 return;
         }
 
-        ViewData["ScriptInicio"] = string.Format("MostarExcepciones('{0}', '{1}');",
-            JavaScriptEncoder.Default.Encode(tituloError), JavaScriptEncoder.Default.Encode(ex.Message));
+        ViewData["ScriptInicio"] = $"EV.alerta({Js(ex.Message)}, [], {Js(tituloError)});";
     }
 
-    /// <summary>Origen: Util.Notificar (Util.cs:41-44).</summary>
+    /// <summary>Origen: Util.Notificar (Util.cs:41-44). El mockup muestra solo el mensaje, bajo el rótulo "Notificación".</summary>
     protected void Notificar(string titulo, string mensaje)
     {
-        ViewData["ScriptInicio"] = string.Format("setTimeout(function(){{Notificar('{0}','{1}')}}, 500);",
-            JavaScriptEncoder.Default.Encode(titulo), JavaScriptEncoder.Default.Encode(mensaje));
+        ViewData["ScriptInicio"] = $"EV.notificar({Js(mensaje)});";
     }
+
+    /// <summary>Muestra los errores de validación del formulario en un diálogo, como el mockup.</summary>
+    protected void MostrarErroresDeValidacion(IEnumerable<string> errores)
+    {
+        ViewData["ScriptInicio"] = $"EV.errores({JsonSerializer.Serialize(errores)});";
+    }
+
+    /// <summary>Literal de JavaScript seguro para incrustar en la página.</summary>
+    private static string Js(string texto) => JsonSerializer.Serialize(texto);
 }

@@ -1,3 +1,4 @@
+using eVidencia.Comun.Excel;
 using eVidencia.Comun.Grid;
 using eVidencia.Entidades;
 using eVidencia.Entidades.Filtros;
@@ -7,24 +8,109 @@ namespace eVidencia.DAL.Memoria;
 // Implementación en memoria: permite ejecutar la demo sin base de datos y probar la lógica de negocio.
 // Los datos se pierden al parar la aplicación. No es parte de la migración: es un apoyo para la demo.
 
-/// <summary>Datos en memoria compartidos por los repositorios.</summary>
+/// <summary>
+/// Datos en memoria compartidos por los repositorios. Se cargan de un libro Excel (una hoja = una tabla,
+/// con los nombres de tabla y columna del modelo de eVidencia) o, si no hay libro, de los datos de ejemplo.
+/// Los cambios se quedan en memoria: no se escriben en el Excel.
+/// </summary>
 public sealed class AlmacenMemoria
 {
     public readonly object Cerrojo = new();
-    public List<TIPO_DE_PROCESO> TiposDeProceso { get; } = DatosDeEjemplo.TiposDeProceso();
-    public List<PERFIL_DE_USUARIO> Perfiles { get; } = DatosDeEjemplo.Perfiles();
-    public List<USUARIO> Usuarios { get; } = DatosDeEjemplo.Usuarios();
-    public List<PROCESO> Procesos { get; } = DatosDeEjemplo.Procesos();
-    public List<SUBPROCESO> Subprocesos { get; } = [];
+    public List<TIPO_DE_PROCESO> TiposDeProceso { get; private init; } = [];
+    public List<PERFIL_DE_USUARIO> Perfiles { get; private init; } = [];
+    public List<USUARIO> Usuarios { get; private init; } = [];
+    public List<PROCESO> Procesos { get; private init; } = [];
+    public List<SUBPROCESO> Subprocesos { get; private init; } = [];
     /// <summary>IdProceso de cada fila de PROCESO_ASOCIADO.</summary>
-    public List<int> ProcesosAsociados { get; } = DatosDeEjemplo.ProcesosConAsociado();
+    public List<int> ProcesosAsociados { get; private init; } = [];
+    /// <summary>Líneas de LOG_DE_ENTIDADES creadas durante la ejecución.</summary>
     public List<LOG_DE_ENTIDADES> Logs { get; } = [];
+    /// <summary>Número de líneas de LOG_DE_ENTIDADES que ya había en el origen (no se cargan en memoria).</summary>
+    public int LogsEnOrigen { get; private init; }
+    /// <summary>Descripción del origen de los datos, para mostrarla en pantalla.</summary>
+    public string Origen { get; private init; } = "";
 
-    public AlmacenMemoria()
+    private AlmacenMemoria() { }
+
+    /// <summary>Datos de ejemplo inventados (ver DatosDeEjemplo).</summary>
+    public static AlmacenMemoria DeEjemplo()
     {
+        List<PROCESO> procesos = DatosDeEjemplo.Procesos();
         // Cada proceso lleva su subproceso "Otros", como hace la aplicación al crearlo.
-        foreach (PROCESO p in Procesos)
-            Subprocesos.Add(new SUBPROCESO { IdSubproceso = Subprocesos.Count + 1, Codigo = "", Nombre = "Otros", IdProceso = p.IdProceso, TipoOtros = true });
+        List<SUBPROCESO> subprocesos = procesos
+            .Select((p, i) => new SUBPROCESO { IdSubproceso = i + 1, Codigo = "", Nombre = "Otros", IdProceso = p.IdProceso, TipoOtros = true })
+            .ToList();
+
+        return new AlmacenMemoria
+        {
+            TiposDeProceso = DatosDeEjemplo.TiposDeProceso(),
+            Perfiles = DatosDeEjemplo.Perfiles(),
+            Usuarios = DatosDeEjemplo.Usuarios(),
+            Procesos = procesos,
+            Subprocesos = subprocesos,
+            ProcesosAsociados = DatosDeEjemplo.ProcesosConAsociado(),
+            Origen = "de ejemplo en memoria"
+        };
+    }
+
+    /// <summary>
+    /// Carga las tablas que usa la Administración de Procesos desde un libro Excel con una hoja por tabla
+    /// (TIPO_DE_PROCESO, PERFIL_DE_USUARIO, USUARIO, PROCESO, SUBPROCESO, PROCESO_ASOCIADO, LOG_DE_ENTIDADES).
+    /// </summary>
+    public static AlmacenMemoria DesdeExcel(string ruta)
+    {
+        using LectorXlsx libro = new(ruta);
+
+        return new AlmacenMemoria
+        {
+            TiposDeProceso = libro.LeerTabla("TIPO_DE_PROCESO").Select(f => new TIPO_DE_PROCESO
+            {
+                IdTipoDeProceso = ValorXlsx.Entero(f["IdTipoDeProceso"]),
+                Nombre = f["Nombre"] ?? ""
+            }).ToList(),
+
+            Perfiles = libro.LeerTabla("PERFIL_DE_USUARIO").Select(f => new PERFIL_DE_USUARIO
+            {
+                IdPerfilDeUsuario = ValorXlsx.Entero(f["IdPerfilDeUsuario"]),
+                Nombre = f["Nombre"] ?? ""
+            }).ToList(),
+
+            Usuarios = libro.LeerTabla("USUARIO").Select(f => new USUARIO
+            {
+                IdUsuario = ValorXlsx.Entero(f["IdUsuario"]),
+                Nombre = f["Nombre"] ?? "",
+                Apellidos = f["Apellidos"] ?? "",
+                UID = f["UID"],
+                IdPerfilDeUsuario = ValorXlsx.Entero(f["IdPerfilDeUsuario"]),
+                Borrado = ValorXlsx.Logico(f["Borrado"])
+            }).ToList(),
+
+            Procesos = libro.LeerTabla("PROCESO").Select(f => new PROCESO
+            {
+                IdProceso = ValorXlsx.Entero(f["IdProceso"]),
+                Codigo = f["Codigo"],
+                Nombre = f["Nombre"],
+                IdTipoDeProceso = ValorXlsx.Entero(f["IdTipoDeProceso"]),
+                Borrado = ValorXlsx.Logico(f["Borrado"])
+            }).ToList(),
+
+            Subprocesos = libro.LeerTabla("SUBPROCESO").Select(f => new SUBPROCESO
+            {
+                IdSubproceso = ValorXlsx.Entero(f["IdSubproceso"]),
+                Codigo = f["Codigo"],
+                Nombre = f["Nombre"],
+                // En la base de datos IdProceso es obligatorio; si el libro lo trae vacío se carga como 0 (sin proceso).
+                IdProceso = ValorXlsx.EnteroONulo(f["IdProceso"]) ?? 0,
+                Borrado = ValorXlsx.Logico(f["Borrado"]),
+                TipoOtros = ValorXlsx.Logico(f["TipoOtros"])
+            }).ToList(),
+
+            ProcesosAsociados = libro.LeerTabla("PROCESO_ASOCIADO").Select(f => ValorXlsx.Entero(f["IdProceso"])).ToList(),
+
+            LogsEnOrigen = libro.ExisteHoja("LOG_DE_ENTIDADES") ? libro.LeerTabla("LOG_DE_ENTIDADES").Count : 0,
+
+            Origen = "libro Excel " + Path.GetFileName(ruta)
+        };
     }
 }
 
@@ -216,7 +302,7 @@ public sealed class RepositorioLogDeEntidadesMemoria(AlmacenMemoria almacen) : I
     {
         lock (almacen.Cerrojo)
         {
-            log.IdLogDeEntidades = almacen.Logs.Count + 1;
+            log.IdLogDeEntidades = almacen.LogsEnOrigen + almacen.Logs.Count + 1;
             almacen.Logs.Add(log);
         }
     }

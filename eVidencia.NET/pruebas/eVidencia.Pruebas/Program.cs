@@ -24,7 +24,7 @@ T? Captura<T>(Action accion) where T : Exception
 
 (GestorProcesos gp, AlmacenMemoria almacen) Crear(string uid = DatosDeEjemplo.UidUsuarioDemo, int? perfil = null)
 {
-    AlmacenMemoria almacen = new();
+    AlmacenMemoria almacen = AlmacenMemoria.DeEjemplo();
     if (perfil != null) almacen.Usuarios[0].IdPerfilDeUsuario = perfil.Value;
     var rp = new RepositorioProcesosMemoria(almacen);
     var rs = new RepositorioSubprocesosMemoria(almacen);
@@ -131,6 +131,30 @@ Console.WriteLine("Permisos (GestorProcesos.AccionesPermitidas)");
     }
     var (gpDesconocido, _) = Crear(uid: "no.existe");
     Comprobar("usuario que no está en la tabla USUARIO: 'No existe el usuario'", Captura<ApplicationException>(() => gpDesconocido.ConsultarTiposProcesos())?.Message == "No existe el usuario");
+}
+
+// Comprobaciones opcionales sobre un libro Excel de datos: dotnet run --project pruebas/eVidencia.Pruebas -- <ruta.xlsx>
+if (args.Length > 0 && File.Exists(args[0]))
+{
+    Console.WriteLine("Carga desde Excel (" + Path.GetFileName(args[0]) + ")");
+    AlmacenMemoria excel = AlmacenMemoria.DesdeExcel(args[0]);
+    var rp = new RepositorioProcesosMemoria(excel);
+    var rs = new RepositorioSubprocesosMemoria(excel);
+    USUARIO? admin = excel.Usuarios.FirstOrDefault(u => !u.Borrado && u.IdPerfilDeUsuario == (int)PerfilDeUsuario.Administrador);
+    Comprobar("el libro tiene al menos un usuario Administrador", admin != null);
+    var gu = new GestorUsuarios(new RepositorioUsuariosMemoria(excel), new UsuarioFijo(admin?.UID ?? ""));
+    var gl = new GestorLogDeEntidades(new RepositorioLogDeEntidadesMemoria(excel), gu);
+    var gp = new GestorProcesos(rp, rs, gu, new GestorSubprocesos(rs, rp, gu, gl), gl);
+    var lista = gp.ConsultarProcesoConFiltro(null, "Codigo asc", 1, 1000, out int totalExcel);
+    Console.WriteLine($"        procesos={totalExcel} tipos={excel.TiposDeProceso.Count} subprocesos={excel.Subprocesos.Count} usuarios={excel.Usuarios.Count} asociados={excel.ProcesosAsociados.Count} logs en origen={excel.LogsEnOrigen}");
+    Comprobar("lee los procesos y todos tienen tipo de proceso", totalExcel > 0 && lista.All(p => p.TIPO_DE_PROCESO != null));
+    Comprobar("lee los tipos de proceso para el desplegable", gp.ConsultarTiposProcesos().Count == excel.TiposDeProceso.Count);
+    int conAsociado = excel.ProcesosAsociados.First();
+    Comprobar("un proceso con procesos asociados no se puede eliminar", Captura<ApplicationException>(() => gp.EliminarProceso(conAsociado))?.Message == "El Proceso tiene procesos asociados");
+    int nuevo = gp.CrearProceso(new PROCESO { Codigo = "ZZ-PRB", Nombre = "Prueba de carga", IdTipoDeProceso = excel.TiposDeProceso[0].IdTipoDeProceso });
+    Comprobar("alta sobre los datos del libro y numeración del log a continuación del origen", excel.Logs.Count == 2 && excel.Logs[0].IdLogDeEntidades == excel.LogsEnOrigen + 1);
+    gp.EliminarProceso(nuevo);
+    Comprobar("baja del proceso recién creado", excel.Procesos.Single(p => p.IdProceso == nuevo).Borrado);
 }
 
 Console.WriteLine();

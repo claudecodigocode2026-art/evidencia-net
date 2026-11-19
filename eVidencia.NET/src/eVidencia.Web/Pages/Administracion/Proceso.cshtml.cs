@@ -82,7 +82,11 @@ public partial class ProcesoModel(GestorProcesos gestorProcesos) : PaginaBase
 
         Validar();
 
-        if (ErroresDeValidacion.Count == 0)
+        if (ErroresDeValidacion.Count > 0)
+        {
+            MostrarErroresDeValidacion(ErroresDeValidacion);
+        }
+        else
         {
             try
             {
