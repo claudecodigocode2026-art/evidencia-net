@@ -4,6 +4,13 @@
 set -u
 cd "$(dirname "$0")/../eVidencia.NET"
 
+# Si la demo ya está en marcha (de un arranque anterior), se para antes: el puerto 5080 solo admite una.
+if pgrep -f "eVidencia.Web" > /dev/null; then
+  echo "== Parando la demo que estaba en marcha =="
+  pkill -f "eVidencia.Web" || true
+  sleep 2
+fi
+
 echo "== Compilando la solución (la primera vez tarda uno o dos minutos) =="
 OPCIONES=""
 if ! dotnet build eVidencia.sln -nologo -v q; then
