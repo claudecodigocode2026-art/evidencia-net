@@ -121,6 +121,7 @@
        clave         campo identificador de la fila
        ordenInicial  { campo, dir }
        filtros       { nombreEnElFiltro: selectorDelInput }
+       alEnviarFiltro (opcional) función que recibe los filtros leídos y devuelve el objeto que se envía al servicio
        esVolver      true si se llega desde la propia pantalla o su ficha
        alAbrir(fila) acción al pulsar "i" o hacer doble clic
      } */
@@ -209,7 +210,7 @@
     function cargar() {
       var datos = new URLSearchParams();
       datos.set('page', st.page); datos.set('rows', st.rows); datos.set('sidx', st.sidx); datos.set('sord', st.sord);
-      datos.set('filtro', JSON.stringify(st.filtros));
+      datos.set('filtro', JSON.stringify(o.alEnviarFiltro ? o.alEnviarFiltro(st.filtros) : st.filtros));
       return fetch(o.url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: datos.toString() })
         .then(function (r) { if (!r.ok) throw new Error('El servicio ha respondido ' + r.status); return r.json(); })
         .then(function (d) {

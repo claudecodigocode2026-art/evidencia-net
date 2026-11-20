@@ -165,6 +165,39 @@ app.MapPost("/Administracion/AdministracionService.asmx/ConsultarGridProcesos", 
     return Results.Text(JsonSerializer.Serialize(respuesta, opcionesJson), "application/json");
 });
 
+// ---------------------------------------------------------------------------------------------
+// Servicio del listado de Subprocesos.
+// Origen: eVidencias.Web/Administracion/AdministracionService.asmx.cs:181-202 (ConsultarGridSubprocesos).
+// ---------------------------------------------------------------------------------------------
+JsonSerializerOptions opcionesFiltro = new()
+{
+    // El original (Json.NET) admite números escritos como texto: el desplegable envía ["5"].
+    NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
+};
+
+app.MapPost("/Administracion/AdministracionService.asmx/ConsultarGridSubprocesos", async (HttpContext http, GestorSubprocesos gestorSubprocesos) =>
+{
+    IFormCollection form = await http.Request.ReadFormAsync();
+    int page = int.TryParse(form["page"], out int p) ? p : -1;
+    int rows = int.TryParse(form["rows"], out int r) ? r : -1;
+    string orden = form["sidx"].ToString() + " " + form["sord"].ToString();
+    string filtro = form["filtro"].ToString();
+
+    FiltroSUBPROCESO? filtroSubproceso = string.IsNullOrWhiteSpace(filtro) ? null : JsonSerializer.Deserialize<FiltroSUBPROCESO>(filtro, opcionesFiltro);
+
+    List<SUBPROCESO> subprocesos = gestorSubprocesos.ConsultarSubprocesoConFiltro(filtroSubproceso, orden, page, rows, out int numeroElementosTotales);
+    var listaDeSubprocesos = subprocesos.Select(s => new
+    {
+        s.IdSubproceso,
+        Codigo = WebUtility.HtmlEncode(s.Codigo),
+        Nombre = WebUtility.HtmlEncode(s.Nombre),
+        Proceso = s.PROCESO == null ? "" : WebUtility.HtmlEncode(s.PROCESO.Nombre)
+    }).ToList();
+
+    var respuesta = RespuestaGrid<object>.Crear(page, rows, numeroElementosTotales, listaDeSubprocesos.Cast<object>().ToList());
+    return Results.Text(JsonSerializer.Serialize(respuesta, opcionesJson), "application/json");
+});
+
 app.Run();
 
 /// <summary>Permite referenciar el programa desde pruebas.</summary>

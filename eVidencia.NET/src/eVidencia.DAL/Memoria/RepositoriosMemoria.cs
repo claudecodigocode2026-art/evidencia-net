@@ -21,8 +21,8 @@ public sealed class AlmacenMemoria
     public List<USUARIO> Usuarios { get; private init; } = [];
     public List<PROCESO> Procesos { get; private init; } = [];
     public List<SUBPROCESO> Subprocesos { get; private init; } = [];
-    /// <summary>IdProceso de cada fila de PROCESO_ASOCIADO.</summary>
-    public List<int> ProcesosAsociados { get; private init; } = [];
+    /// <summary>Filas de PROCESO_ASOCIADO (solo las columnas que usan las pantallas migradas).</summary>
+    public List<PROCESO_ASOCIADO> ProcesosAsociados { get; private init; } = [];
     /// <summary>Líneas de LOG_DE_ENTIDADES creadas durante la ejecución.</summary>
     public List<LOG_DE_ENTIDADES> Logs { get; } = [];
     /// <summary>Número de líneas de LOG_DE_ENTIDADES que ya había en el origen (no se cargan en memoria).</summary>
@@ -39,6 +39,7 @@ public sealed class AlmacenMemoria
         // Cada proceso lleva su subproceso "Otros", como hace la aplicación al crearlo.
         List<SUBPROCESO> subprocesos = procesos
             .Select((p, i) => new SUBPROCESO { IdSubproceso = i + 1, Codigo = "", Nombre = "Otros", IdProceso = p.IdProceso, TipoOtros = true })
+            .Concat(DatosDeEjemplo.Subprocesos())
             .ToList();
 
         return new AlmacenMemoria
@@ -48,7 +49,7 @@ public sealed class AlmacenMemoria
             Usuarios = DatosDeEjemplo.Usuarios(),
             Procesos = procesos,
             Subprocesos = subprocesos,
-            ProcesosAsociados = DatosDeEjemplo.ProcesosConAsociado(),
+            ProcesosAsociados = DatosDeEjemplo.ProcesosAsociados(),
             Origen = "de ejemplo en memoria"
         };
     }
@@ -105,7 +106,13 @@ public sealed class AlmacenMemoria
                 TipoOtros = ValorXlsx.Logico(f["TipoOtros"])
             }).ToList(),
 
-            ProcesosAsociados = libro.LeerTabla("PROCESO_ASOCIADO").Select(f => ValorXlsx.Entero(f["IdProceso"])).ToList(),
+            ProcesosAsociados = libro.LeerTabla("PROCESO_ASOCIADO").Select(f => new PROCESO_ASOCIADO
+            {
+                IdProcesoAsociado = ValorXlsx.Entero(f["IdProcesoAsociado"]),
+                IdProceso = ValorXlsx.Entero(f["IdProceso"]),
+                IdSubproceso = ValorXlsx.EnteroONulo(f["IdSubproceso"]),
+                Borrado = ValorXlsx.Logico(f["Borrado"])
+            }).ToList(),
 
             LogsEnOrigen = libro.ExisteHoja("LOG_DE_ENTIDADES") ? libro.LeerTabla("LOG_DE_ENTIDADES").Count : 0,
 
@@ -203,7 +210,7 @@ public sealed class RepositorioProcesosMemoria(AlmacenMemoria almacen) : IReposi
     public int ContarProcesosAsociados(int idProceso)
     {
         lock (almacen.Cerrojo)
-            return almacen.ProcesosAsociados.Count(id => id == idProceso);
+            return almacen.ProcesosAsociados.Count(pa => pa.IdProceso == idProceso);
     }
 
     public List<TIPO_DE_PROCESO> ObtenerTiposDeProceso()
@@ -213,6 +220,23 @@ public sealed class RepositorioProcesosMemoria(AlmacenMemoria almacen) : IReposi
                 .OrderBy(t => t.Nombre, StringComparer.Create(new System.Globalization.CultureInfo("es-ES"), ignoreCase: true))
                 .Select(t => new TIPO_DE_PROCESO { IdTipoDeProceso = t.IdTipoDeProceso, Nombre = t.Nombre })
                 .ToList();
+    }
+
+    public List<PROCESO> ObtenerNoBorradosPorCodigo()
+    {
+        lock (almacen.Cerrojo)
+            return almacen.Procesos.Where(p => !p.Borrado)
+                .OrderBy(p => p.Codigo, ComparadorClave.Instancia)
+                .Select(Copiar).ToList();
+    }
+
+    public List<PROCESO> ObtenerConSubprocesos()
+    {
+        lock (almacen.Cerrojo)
+            return almacen.Procesos
+                .Where(p => !p.Borrado && almacen.Subprocesos.Any(s => s.IdProceso == p.IdProceso))
+                .OrderBy(p => p.IdProceso)
+                .Select(Copiar).ToList();
     }
 
     private PROCESO Copiar(PROCESO p)
@@ -230,7 +254,7 @@ public sealed class RepositorioProcesosMemoria(AlmacenMemoria almacen) : IReposi
     }
 
     /// <summary>Compara claves de orden: números como números y textos en español sin distinguir mayúsculas.</summary>
-    private sealed class ComparadorClave : IComparer<object?>
+    internal sealed class ComparadorClave : IComparer<object?>
     {
         public static readonly ComparadorClave Instancia = new();
         private static readonly StringComparer Texto = StringComparer.Create(new System.Globalization.CultureInfo("es-ES"), ignoreCase: true);
@@ -276,6 +300,95 @@ public sealed class RepositorioSubprocesosMemoria(AlmacenMemoria almacen) : IRep
     {
         lock (almacen.Cerrojo)
             almacen.Subprocesos.First(x => x.IdSubproceso == idSubproceso).Borrado = true;
+    }
+
+    public List<SUBPROCESO> ObtenerFiltrados(FiltroSUBPROCESO? filtro, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales)
+    {
+        List<CriterioOrden> criterios = OrdenGrid.Interpretar(orden, CamposOrdenSubproceso.Todos);
+        if (criterios.Count == 0)
+            throw new ArgumentException("No se ha indicado el orden del listado.");
+
+        lock (almacen.Cerrojo)
+        {
+            IEnumerable<SUBPROCESO> consulta = almacen.Subprocesos.Where(s => !s.Borrado && !s.TipoOtros).Select(Copiar);
+            if (filtro != null)
+            {
+                if (!string.IsNullOrEmpty(filtro.Codigo))
+                    consulta = consulta.Where(s => (s.Codigo ?? "").Contains(filtro.Codigo, Comparacion));
+                if (!string.IsNullOrEmpty(filtro.Nombre))
+                    consulta = consulta.Where(s => (s.Nombre ?? "").Contains(filtro.Nombre, Comparacion));
+                if (filtro.ListaIdProceso != null)
+                    consulta = consulta.Where(s => filtro.ListaIdProceso.Contains(s.IdProceso));
+            }
+
+            List<SUBPROCESO> filtrados = consulta.ToList();
+            numeroElementosTotales = filtrados.Count;
+
+            var comparador = RepositorioProcesosMemoria.ComparadorClave.Instancia;
+            IOrderedEnumerable<SUBPROCESO>? ordenados = null;
+            foreach (CriterioOrden c in criterios)
+            {
+                Func<SUBPROCESO, object?> clave = c.Campo switch
+                {
+                    CamposOrdenSubproceso.IdSubproceso => s => s.IdSubproceso,
+                    CamposOrdenSubproceso.Codigo => s => s.Codigo,
+                    CamposOrdenSubproceso.Nombre => s => s.Nombre,
+                    _ => s => s.PROCESO?.Nombre
+                };
+                ordenados = ordenados == null
+                    ? (c.Descendente ? filtrados.OrderByDescending(clave, comparador) : filtrados.OrderBy(clave, comparador))
+                    : (c.Descendente ? ordenados.ThenByDescending(clave, comparador) : ordenados.ThenBy(clave, comparador));
+            }
+
+            return ordenados!.Skip(numeroElementosPorPagina * (numeroPagina - 1)).Take(numeroElementosPorPagina).ToList();
+        }
+    }
+
+    public SUBPROCESO? ObtenerPorId(int idSubproceso)
+    {
+        lock (almacen.Cerrojo)
+        {
+            SUBPROCESO? s = almacen.Subprocesos.FirstOrDefault(x => x.IdSubproceso == idSubproceso && !x.Borrado);
+            return s == null ? null : Copiar(s);
+        }
+    }
+
+    public int ContarConMismoCodigo(string? codigo, int idSubprocesoExcluido)
+    {
+        lock (almacen.Cerrojo)
+            return almacen.Subprocesos.Count(s => string.Equals(s.Codigo, codigo, Comparacion) && s.IdSubproceso != idSubprocesoExcluido && !s.Borrado);
+    }
+
+    public void Actualizar(SUBPROCESO subproceso)
+    {
+        lock (almacen.Cerrojo)
+        {
+            SUBPROCESO s = almacen.Subprocesos.First(x => x.IdSubproceso == subproceso.IdSubproceso);
+            s.Codigo = subproceso.Codigo;
+            s.Nombre = subproceso.Nombre;
+            s.IdProceso = subproceso.IdProceso;
+        }
+    }
+
+    public int ContarProcesosAsociadosNoBorrados(int idSubproceso)
+    {
+        lock (almacen.Cerrojo)
+            return almacen.ProcesosAsociados.Count(pa => pa.IdSubproceso == idSubproceso && !pa.Borrado);
+    }
+
+    // Las búsquedas y comparaciones no distinguen mayúsculas, como la intercalación habitual de SQL Server.
+    private const StringComparison Comparacion = StringComparison.OrdinalIgnoreCase;
+
+    /// <summary>Copia con su PROCESO, esté o no borrado (la relación del modelo original no filtra por Borrado).</summary>
+    private SUBPROCESO Copiar(SUBPROCESO s)
+    {
+        PROCESO? p = almacen.Procesos.FirstOrDefault(x => x.IdProceso == s.IdProceso);
+        return new SUBPROCESO
+        {
+            IdSubproceso = s.IdSubproceso, Codigo = s.Codigo, Nombre = s.Nombre,
+            IdProceso = s.IdProceso, Borrado = s.Borrado, TipoOtros = s.TipoOtros,
+            PROCESO = p == null ? null : new PROCESO { IdProceso = p.IdProceso, Codigo = p.Codigo, Nombre = p.Nombre, IdTipoDeProceso = p.IdTipoDeProceso, Borrado = p.Borrado }
+        };
     }
 }
 

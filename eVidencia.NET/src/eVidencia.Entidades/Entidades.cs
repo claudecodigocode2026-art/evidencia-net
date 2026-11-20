@@ -30,6 +30,15 @@ public class SUBPROCESO
     public PROCESO? PROCESO { get; set; }
 }
 
+/// <summary>Solo las columnas que usan las pantallas migradas.</summary>
+public class PROCESO_ASOCIADO
+{
+    public int IdProcesoAsociado { get; set; }
+    public int IdProceso { get; set; }
+    public int? IdSubproceso { get; set; }
+    public bool Borrado { get; set; }
+}
+
 public class PERFIL_DE_USUARIO
 {
     public int IdPerfilDeUsuario { get; set; }

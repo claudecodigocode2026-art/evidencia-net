@@ -58,7 +58,7 @@ public class GestorLogDeEntidades(IRepositorioLogDeEntidades logs, GestorUsuario
         LogDeEntidad(accion, descripcion, idProceso: procesoDeReferencia.IdProceso, idSubproceso: null);
     }
 
-    /// <summary>Origen: LogDeSubproceso (línea 739). La demo solo usa el alta (subproceso "Otros").</summary>
+    /// <summary>Origen: LogDeSubproceso (línea 739).</summary>
     public void LogDeSubproceso(TipoDeAccionLog accion, SUBPROCESO? antiguo = null, SUBPROCESO? nuevo = null)
     {
         _listaDeCambiosLog = [];
