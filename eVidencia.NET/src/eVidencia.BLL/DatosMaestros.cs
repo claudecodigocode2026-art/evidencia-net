@@ -13,5 +13,12 @@ public static class DatosMaestros
     public const string SubprocesosNoExisteProceso = "No existe el subproceso";
     public const string SubprocesosYaexisteSubprocesoMismoCodigo = "Ya existe otro subproceso con este mismo código";
     public const string SubprocesosEstaAsociadoAunPA = "No se puede eliminar el Subproceso porque esta asociado a Procesos Asignados.";
+    public const string SociedadesNoExisteSociedad = "No existe la sociedad";
+    public const string SociedadesYaExisteSociedadMismoeSif = "Ya existe otra sociedad con este mismo código eSif.";
+    public const string SociedadesTieneProcesosAsociados = "La sociedad tiene procesos asociados.";
+    public const string SociedadesTieneUsuariosAsociados = "La sociedad tiene usuarios asociados";
+    public const string TipoDeEmpresa_1 = "Auditora";
+    public const string TipoDeEmpresa_2 = "Auditada";
+    public const string TipoDeEmpresa_3 = "Ambas";
     public const string UsuariosNoExisteElUsuario = "No existe el usuario";
 }

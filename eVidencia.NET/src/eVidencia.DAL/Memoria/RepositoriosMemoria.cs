@@ -23,6 +23,12 @@ public sealed class AlmacenMemoria
     public List<SUBPROCESO> Subprocesos { get; private init; } = [];
     /// <summary>Filas de PROCESO_ASOCIADO (solo las columnas que usan las pantallas migradas).</summary>
     public List<PROCESO_ASOCIADO> ProcesosAsociados { get; private init; } = [];
+    public List<PAIS> Paises { get; private init; } = [];
+    public List<TIPO_DE_EMPRESA> TiposDeEmpresa { get; private init; } = [];
+    public List<SOCIEDAD> Sociedades { get; private init; } = [];
+    public List<USUARIO_SOCIEDAD_AUDITORES> UsuariosSociedadAuditores { get; private init; } = [];
+    /// <summary>True si las sociedades no vienen del libro Excel y se han generado como ejemplo.</summary>
+    public bool SociedadesDeEjemplo { get; private init; }
     /// <summary>Líneas de LOG_DE_ENTIDADES creadas durante la ejecución.</summary>
     public List<LOG_DE_ENTIDADES> Logs { get; } = [];
     /// <summary>Número de líneas de LOG_DE_ENTIDADES que ya había en el origen (no se cargan en memoria).</summary>
@@ -50,6 +56,11 @@ public sealed class AlmacenMemoria
             Procesos = procesos,
             Subprocesos = subprocesos,
             ProcesosAsociados = DatosDeEjemplo.ProcesosAsociados(),
+            Paises = DatosDeEjemplo.Paises(),
+            TiposDeEmpresa = DatosDeEjemplo.TiposDeEmpresa(),
+            Sociedades = DatosDeEjemplo.Sociedades(),
+            UsuariosSociedadAuditores = DatosDeEjemplo.UsuariosSociedadAuditores(),
+            SociedadesDeEjemplo = true,
             Origen = "de ejemplo en memoria"
         };
     }
@@ -62,8 +73,73 @@ public sealed class AlmacenMemoria
     {
         using LectorXlsx libro = new(ruta);
 
+        List<USUARIO> usuarios = libro.LeerTabla("USUARIO").Select(f => new USUARIO
+        {
+            IdUsuario = ValorXlsx.Entero(f["IdUsuario"]),
+            Nombre = f["Nombre"] ?? "",
+            Apellidos = f["Apellidos"] ?? "",
+            UID = f["UID"],
+            IdPerfilDeUsuario = ValorXlsx.Entero(f["IdPerfilDeUsuario"]),
+            IdSociedad = f.ContainsKey("IdSociedad") ? ValorXlsx.EnteroONulo(f["IdSociedad"]) : null,
+            Borrado = ValorXlsx.Logico(f["Borrado"])
+        }).ToList();
+
+        List<PROCESO_ASOCIADO> procesosAsociados = libro.LeerTabla("PROCESO_ASOCIADO").Select(f => new PROCESO_ASOCIADO
+        {
+            IdProcesoAsociado = ValorXlsx.Entero(f["IdProcesoAsociado"]),
+            IdProceso = ValorXlsx.Entero(f["IdProceso"]),
+            IdSubproceso = ValorXlsx.EnteroONulo(f["IdSubproceso"]),
+            IdSociedad = f.ContainsKey("IdSociedad") ? ValorXlsx.EnteroONulo(f["IdSociedad"]) ?? 0 : 0,
+            Borrado = ValorXlsx.Logico(f["Borrado"])
+        }).ToList();
+
+        // Sociedades, países y tipos de empresa: si el libro no trae la hoja SOCIEDAD (el libro de demostración
+        // sin datos personales no la incluye), se generan sociedades de ejemplo con los identificadores que
+        // usan los usuarios y los procesos asignados del libro, para que las relaciones sigan siendo coherentes.
+        bool hayHojaSociedad = libro.ExisteHoja("SOCIEDAD");
+        List<PAIS> paises = libro.ExisteHoja("PAIS")
+            ? libro.LeerTabla("PAIS").Select(f => new PAIS { IdPais = ValorXlsx.Entero(f["IdPais"]), Nombre = f["Nombre"] ?? "" }).ToList()
+            : DatosDeEjemplo.Paises();
+        List<TIPO_DE_EMPRESA> tiposDeEmpresa = libro.ExisteHoja("TIPO_DE_EMPRESA")
+            ? libro.LeerTabla("TIPO_DE_EMPRESA").Select(f => new TIPO_DE_EMPRESA { IdTipoDeEmpresa = ValorXlsx.Entero(f["IdTipoDeEmpresa"]), Nombre = f["Nombre"] ?? "" }).ToList()
+            : DatosDeEjemplo.TiposDeEmpresa();
+        List<SOCIEDAD> sociedades = hayHojaSociedad
+            ? libro.LeerTabla("SOCIEDAD").Select(f => new SOCIEDAD
+              {
+                  IdSociedad = ValorXlsx.Entero(f["IdSociedad"]),
+                  CodigoEsif = f["CodigoEsif"],
+                  Nombre = f["Nombre"],
+                  IdTipoDeEmpresa = ValorXlsx.Entero(f["IdTipoDeEmpresa"]),
+                  IdPais = ValorXlsx.Entero(f["IdPais"]),
+                  Borrado = ValorXlsx.Logico(f["Borrado"])
+              }).ToList()
+            : usuarios.Where(u => u.IdSociedad != null).Select(u => u.IdSociedad!.Value)
+                .Concat(procesosAsociados.Select(pa => pa.IdSociedad))
+                .Where(id => id > 0).Distinct().Order()
+                .Select((id, i) => new SOCIEDAD
+                {
+                    IdSociedad = id,
+                    CodigoEsif = "E" + id.ToString("000"),
+                    Nombre = "Sociedad " + id + " (ejemplo)",
+                    IdTipoDeEmpresa = tiposDeEmpresa[i % tiposDeEmpresa.Count].IdTipoDeEmpresa,
+                    IdPais = paises[i % paises.Count].IdPais
+                }).ToList();
+        List<USUARIO_SOCIEDAD_AUDITORES> usuariosSociedad = libro.ExisteHoja("USUARIO_SOCIEDAD_AUDITORES")
+            ? libro.LeerTabla("USUARIO_SOCIEDAD_AUDITORES").Select(f => new USUARIO_SOCIEDAD_AUDITORES
+              {
+                  IdUsuario = ValorXlsx.Entero(f["IdUsuario"]),
+                  IdSociedad = ValorXlsx.Entero(f["IdSociedad"])
+              }).ToList()
+            : [];
+
         return new AlmacenMemoria
         {
+            Paises = paises,
+            TiposDeEmpresa = tiposDeEmpresa,
+            Sociedades = sociedades,
+            UsuariosSociedadAuditores = usuariosSociedad,
+            SociedadesDeEjemplo = !hayHojaSociedad,
+
             TiposDeProceso = libro.LeerTabla("TIPO_DE_PROCESO").Select(f => new TIPO_DE_PROCESO
             {
                 IdTipoDeProceso = ValorXlsx.Entero(f["IdTipoDeProceso"]),
@@ -76,15 +152,7 @@ public sealed class AlmacenMemoria
                 Nombre = f["Nombre"] ?? ""
             }).ToList(),
 
-            Usuarios = libro.LeerTabla("USUARIO").Select(f => new USUARIO
-            {
-                IdUsuario = ValorXlsx.Entero(f["IdUsuario"]),
-                Nombre = f["Nombre"] ?? "",
-                Apellidos = f["Apellidos"] ?? "",
-                UID = f["UID"],
-                IdPerfilDeUsuario = ValorXlsx.Entero(f["IdPerfilDeUsuario"]),
-                Borrado = ValorXlsx.Logico(f["Borrado"])
-            }).ToList(),
+            Usuarios = usuarios,
 
             Procesos = libro.LeerTabla("PROCESO").Select(f => new PROCESO
             {
@@ -106,13 +174,7 @@ public sealed class AlmacenMemoria
                 TipoOtros = ValorXlsx.Logico(f["TipoOtros"])
             }).ToList(),
 
-            ProcesosAsociados = libro.LeerTabla("PROCESO_ASOCIADO").Select(f => new PROCESO_ASOCIADO
-            {
-                IdProcesoAsociado = ValorXlsx.Entero(f["IdProcesoAsociado"]),
-                IdProceso = ValorXlsx.Entero(f["IdProceso"]),
-                IdSubproceso = ValorXlsx.EnteroONulo(f["IdSubproceso"]),
-                Borrado = ValorXlsx.Logico(f["Borrado"])
-            }).ToList(),
+            ProcesosAsociados = procesosAsociados,
 
             LogsEnOrigen = libro.ExisteHoja("LOG_DE_ENTIDADES") ? libro.LeerTabla("LOG_DE_ENTIDADES").Count : 0,
 
@@ -392,6 +454,147 @@ public sealed class RepositorioSubprocesosMemoria(AlmacenMemoria almacen) : IRep
     }
 }
 
+public sealed class RepositorioSociedadesMemoria(AlmacenMemoria almacen) : IRepositorioSociedades
+{
+    // Las búsquedas y comparaciones no distinguen mayúsculas, como la intercalación habitual de SQL Server.
+    private const StringComparison Comparacion = StringComparison.OrdinalIgnoreCase;
+
+    public List<SOCIEDAD> ObtenerFiltrados(FiltroSOCIEDAD? filtro, int? idUsuarioAsignado, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales)
+    {
+        List<CriterioOrden> criterios = OrdenGrid.Interpretar(orden, CamposOrdenSociedad.Todos);
+        if (criterios.Count == 0)
+            throw new ArgumentException("No se ha indicado el orden del listado.");
+
+        lock (almacen.Cerrojo)
+        {
+            IEnumerable<SOCIEDAD> consulta = almacen.Sociedades.Where(s => !s.Borrado);
+            if (filtro != null)
+            {
+                if (!string.IsNullOrEmpty(filtro.Nombre))
+                    consulta = consulta.Where(s => (s.Nombre ?? "").Contains(filtro.Nombre, Comparacion));
+                if (filtro.ListaIdPais != null)
+                    consulta = consulta.Where(s => filtro.ListaIdPais.Contains(s.IdPais));
+                if (filtro.ListaIdTipoEmpresa != null)
+                    consulta = consulta.Where(s => filtro.ListaIdTipoEmpresa.Contains(s.IdTipoDeEmpresa));
+            }
+            if (idUsuarioAsignado != null)
+            {
+                HashSet<int> asignadas = almacen.UsuariosSociedadAuditores
+                    .Where(us => us.IdUsuario == idUsuarioAsignado).Select(us => us.IdSociedad).ToHashSet();
+                consulta = consulta.Where(s => asignadas.Contains(s.IdSociedad));
+            }
+
+            List<SOCIEDAD> filtrados = consulta.Select(Copiar).ToList();
+            numeroElementosTotales = filtrados.Count;
+
+            var comparador = RepositorioProcesosMemoria.ComparadorClave.Instancia;
+            IOrderedEnumerable<SOCIEDAD>? ordenados = null;
+            foreach (CriterioOrden c in criterios)
+            {
+                Func<SOCIEDAD, object?> clave = c.Campo switch
+                {
+                    CamposOrdenSociedad.IdSociedad => s => s.IdSociedad,
+                    CamposOrdenSociedad.CodigoEsif => s => s.CodigoEsif,
+                    CamposOrdenSociedad.Nombre => s => s.Nombre,
+                    CamposOrdenSociedad.TipoDeEmpresa => s => s.TIPO_DE_EMPRESA?.Nombre,
+                    _ => s => s.PAIS?.Nombre
+                };
+                ordenados = ordenados == null
+                    ? (c.Descendente ? filtrados.OrderByDescending(clave, comparador) : filtrados.OrderBy(clave, comparador))
+                    : (c.Descendente ? ordenados.ThenByDescending(clave, comparador) : ordenados.ThenBy(clave, comparador));
+            }
+
+            return ordenados!.Skip(numeroElementosPorPagina * (numeroPagina - 1)).Take(numeroElementosPorPagina).ToList();
+        }
+    }
+
+    public SOCIEDAD? ObtenerPorId(int idSociedad)
+    {
+        lock (almacen.Cerrojo)
+        {
+            SOCIEDAD? s = almacen.Sociedades.FirstOrDefault(x => x.IdSociedad == idSociedad && !x.Borrado);
+            return s == null ? null : Copiar(s);
+        }
+    }
+
+    public int ContarConMismoCodigoEsif(string? codigoEsif, int idSociedadExcluida)
+    {
+        lock (almacen.Cerrojo)
+            return almacen.Sociedades.Count(s => string.Equals(s.CodigoEsif, codigoEsif, Comparacion) && s.IdSociedad != idSociedadExcluida && !s.Borrado);
+    }
+
+    public int Insertar(SOCIEDAD sociedad)
+    {
+        lock (almacen.Cerrojo)
+        {
+            int id = almacen.Sociedades.Count == 0 ? 1 : almacen.Sociedades.Max(s => s.IdSociedad) + 1;
+            almacen.Sociedades.Add(new SOCIEDAD
+            {
+                IdSociedad = id, CodigoEsif = sociedad.CodigoEsif, Nombre = sociedad.Nombre,
+                IdTipoDeEmpresa = sociedad.IdTipoDeEmpresa, IdPais = sociedad.IdPais
+            });
+            return id;
+        }
+    }
+
+    public void Actualizar(SOCIEDAD sociedad)
+    {
+        lock (almacen.Cerrojo)
+        {
+            SOCIEDAD s = almacen.Sociedades.First(x => x.IdSociedad == sociedad.IdSociedad);
+            s.CodigoEsif = sociedad.CodigoEsif;
+            s.Nombre = sociedad.Nombre;
+            s.IdPais = sociedad.IdPais;
+            s.IdTipoDeEmpresa = sociedad.IdTipoDeEmpresa;
+        }
+    }
+
+    public void MarcarBorrado(int idSociedad)
+    {
+        lock (almacen.Cerrojo)
+            almacen.Sociedades.First(x => x.IdSociedad == idSociedad).Borrado = true;
+    }
+
+    public UsoDeSociedad ObtenerUso(int idSociedad)
+    {
+        lock (almacen.Cerrojo)
+            return new UsoDeSociedad(
+                almacen.ProcesosAsociados.Count(pa => pa.IdSociedad == idSociedad),
+                almacen.Usuarios.Count(u => u.IdSociedad == idSociedad),
+                almacen.UsuariosSociedadAuditores.Count(us => us.IdSociedad == idSociedad));
+    }
+
+    public List<TIPO_DE_EMPRESA> ObtenerTiposDeEmpresa()
+    {
+        lock (almacen.Cerrojo)
+            return almacen.TiposDeEmpresa
+                .Select(t => new TIPO_DE_EMPRESA { IdTipoDeEmpresa = t.IdTipoDeEmpresa, Nombre = t.Nombre })
+                .ToList();
+    }
+
+    public List<PAIS> ObtenerPaises()
+    {
+        lock (almacen.Cerrojo)
+            return almacen.Paises
+                .OrderBy(p => p.Nombre, StringComparer.Create(new System.Globalization.CultureInfo("es-ES"), ignoreCase: true))
+                .Select(p => new PAIS { IdPais = p.IdPais, Nombre = p.Nombre })
+                .ToList();
+    }
+
+    private SOCIEDAD Copiar(SOCIEDAD s)
+    {
+        TIPO_DE_EMPRESA? tipo = almacen.TiposDeEmpresa.FirstOrDefault(t => t.IdTipoDeEmpresa == s.IdTipoDeEmpresa);
+        PAIS? pais = almacen.Paises.FirstOrDefault(p => p.IdPais == s.IdPais);
+        return new SOCIEDAD
+        {
+            IdSociedad = s.IdSociedad, CodigoEsif = s.CodigoEsif, Nombre = s.Nombre,
+            IdTipoDeEmpresa = s.IdTipoDeEmpresa, IdPais = s.IdPais, Borrado = s.Borrado,
+            TIPO_DE_EMPRESA = tipo == null ? null : new TIPO_DE_EMPRESA { IdTipoDeEmpresa = tipo.IdTipoDeEmpresa, Nombre = tipo.Nombre },
+            PAIS = pais == null ? null : new PAIS { IdPais = pais.IdPais, Nombre = pais.Nombre }
+        };
+    }
+}
+
 public sealed class RepositorioUsuariosMemoria(AlmacenMemoria almacen) : IRepositorioUsuarios
 {
     public List<USUARIO> ObtenerPorUid(string uid)
@@ -402,7 +605,7 @@ public sealed class RepositorioUsuariosMemoria(AlmacenMemoria almacen) : IReposi
                 .Select(u => new USUARIO
                 {
                     IdUsuario = u.IdUsuario, Nombre = u.Nombre, Apellidos = u.Apellidos, UID = u.UID,
-                    IdPerfilDeUsuario = u.IdPerfilDeUsuario, Borrado = u.Borrado,
+                    IdPerfilDeUsuario = u.IdPerfilDeUsuario, IdSociedad = u.IdSociedad, Borrado = u.Borrado,
                     PERFIL_DE_USUARIO = almacen.Perfiles.FirstOrDefault(p => p.IdPerfilDeUsuario == u.IdPerfilDeUsuario)
                 })
                 .ToList();

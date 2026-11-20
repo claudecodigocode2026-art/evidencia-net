@@ -273,6 +273,141 @@ Console.WriteLine("Subprocesos: permisos por perfil (GestorSubprocesos.AccionesP
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Sociedades (GestorSociedades). Datos de ejemplo: 7 sociedades, la 6 borrada.
+//   1: con procesos asignados · 2: sociedad del usuario de la demo · 3: asignada al usuario de la demo
+//   4: solo un proceso asignado borrado · 5: sin uso · 7: sociedad de un usuario dado de baja
+// ---------------------------------------------------------------------------------------------
+(GestorSociedades gso, GestorDatosMaestros gdm, AlmacenMemoria almacen) CrearSoc(int? perfil = null)
+{
+    AlmacenMemoria almacen = AlmacenMemoria.DeEjemplo();
+    if (perfil != null) almacen.Usuarios[0].IdPerfilDeUsuario = perfil.Value;
+    var rso = new RepositorioSociedadesMemoria(almacen);
+    var gu = new GestorUsuarios(new RepositorioUsuariosMemoria(almacen), new UsuarioFijo(DatosDeEjemplo.UidUsuarioDemo));
+    var gl = new GestorLogDeEntidades(new RepositorioLogDeEntidadesMemoria(almacen), gu);
+    return (new GestorSociedades(rso, gu, gl), new GestorDatosMaestros(rso, gu), almacen);
+}
+
+Console.WriteLine();
+Console.WriteLine("Sociedades: listado (GestorSociedades.ConsultarSociedadConFiltro)");
+{
+    var (gso, gdm, _) = CrearSoc();
+    var p1 = gso.ConsultarSociedadConFiltro(null, "CodigoEsif asc", 1, 20, out int total);
+    Comprobar("no incluye las sociedades borradas (6 de 7)", total == 6 && p1.All(s => s.IdSociedad != 6));
+    Comprobar("orden inicial por Código eSif ascendente", p1[0].CodigoEsif == "E001" && p1[5].CodigoEsif == "E007");
+    Comprobar("cada fila trae el tipo de empresa y el país", p1.All(s => !string.IsNullOrEmpty(s.TIPO_DE_EMPRESA?.Nombre) && !string.IsNullOrEmpty(s.PAIS?.Nombre)));
+    gso.ConsultarSociedadConFiltro(new FiltroSOCIEDAD { Nombre = "filial" }, "CodigoEsif asc", 1, 20, out int t1);
+    Comprobar("filtro Nombre: contiene el texto, sin distinguir mayúsculas", t1 == 2);
+    var f2 = gso.ConsultarSociedadConFiltro(new FiltroSOCIEDAD { ListaIdTipoEmpresa = [2] }, "CodigoEsif asc", 1, 20, out int t2);
+    Comprobar("filtro Tipo de Empresa", t2 == 3 && f2.All(s => s.IdTipoDeEmpresa == 2));
+    var f3 = gso.ConsultarSociedadConFiltro(new FiltroSOCIEDAD { ListaIdPais = [1] }, "CodigoEsif asc", 1, 20, out int t3);
+    Comprobar("filtro País", t3 == 2 && f3.All(s => s.IdPais == 1));
+    gso.ConsultarSociedadConFiltro(new FiltroSOCIEDAD { Nombre = "Sociedad", ListaIdTipoEmpresa = [2], ListaIdPais = [4] }, "CodigoEsif asc", 1, 20, out int t4);
+    Comprobar("los filtros se combinan con Y", t4 == 1);
+    var porPais = gso.ConsultarSociedadConFiltro(null, "PAIS.Nombre asc", 1, 20, out _);
+    Comprobar("orden por la columna País", porPais[0].PAIS!.Nombre == "Argentina" && porPais[5].PAIS!.Nombre == "España");
+    var porTipo = gso.ConsultarSociedadConFiltro(null, "TIPO_DE_EMPRESA.Nombre desc", 1, 20, out _);
+    Comprobar("orden por la columna Tipo de Empresa", porTipo[0].TIPO_DE_EMPRESA!.Nombre == "Auditora" && porTipo[5].TIPO_DE_EMPRESA!.Nombre == "Ambas");
+    var pag2 = gso.ConsultarSociedadConFiltro(null, "CodigoEsif asc", 2, 4, out _);
+    Comprobar("paginación: página 2 de 4 filas con las 2 restantes", pag2.Count == 2 && pag2[0].CodigoEsif == "E005");
+    Comprobar("campo de orden no permitido se rechaza", Captura<ArgumentException>(() => gso.ConsultarSociedadConFiltro(null, "Borrado asc", 1, 20, out _)) != null);
+    Comprobar("desplegable Tipo de Empresa: los tres tipos por orden alfabético", gdm.ConsultarTiposDeEmpresa().Select(t => t.Nombre).SequenceEqual(["Ambas", "Auditada", "Auditora"]));
+    Comprobar("desplegable País: por orden alfabético", gdm.ConsultarPaises().Select(p => p.Nombre).SequenceEqual(["Argentina", "Brasil", "Chile", "España"]));
+
+    var (gsoAuditor, _, _) = CrearSoc((int)PerfilDeUsuario.Auditor);
+    var soloAsignadas = gsoAuditor.ConsultarSociedadConFiltro(null, "CodigoEsif asc", 1, 20, out int tAud);
+    Comprobar("perfil Auditor: solo ve las sociedades que tiene asignadas", tAud == 1 && soloAsignadas[0].IdSociedad == 3);
+    var (gsoExterno, _, _) = CrearSoc((int)PerfilDeUsuario.AuditorExterno);
+    gsoExterno.ConsultarSociedadConFiltro(null, "CodigoEsif asc", 1, 20, out int tExt);
+    Comprobar("resto de perfiles (p. ej. Auditor Externo): ven todas las sociedades", tExt == 6);
+}
+
+Console.WriteLine();
+Console.WriteLine("Sociedades: alta (GestorSociedades.CrearSociedad)");
+{
+    var (gso, _, almacen) = CrearSoc();
+    int id = gso.CrearSociedad(new SOCIEDAD { CodigoEsif = "N001", Nombre = "Sociedad nueva", IdTipoDeEmpresa = 3, IdPais = 4 });
+    SOCIEDAD creada = gso.ConsultarSociedad(id);
+    Comprobar("crea la sociedad con sus datos", creada.CodigoEsif == "N001" && creada.Nombre == "Sociedad nueva" && creada.IdTipoDeEmpresa == 3 && creada.IdPais == 4 && !creada.Borrado);
+    string esperado = "Se ha creado la Sociedad: Sociedad nueva" + NL +
+                      "\n *[Campo CodigoEsif:]* Valor nuevo: N001 " + NL +
+                      "\n *[Campo Nombre:]* Valor nuevo: Sociedad nueva " + NL +
+                      "\n *[Campo País:]* Valor antiguo:  - Valor nuevo: Chile " + NL +
+                      "\n *[Campo Tipo de Empresa:]* Valor antiguo:  - Valor nuevo: Ambas ";
+    Comprobar("texto de auditoría del alta igual al formato del original", almacen.Logs.Count == 1 && almacen.Logs[0].Descripcion == esperado);
+    Comprobar("la auditoría apunta a la sociedad", almacen.Logs[0].IdSociedad == id && almacen.Logs[0].IdProceso == null && almacen.Logs[0].IdTipoDeAccion == 1 && almacen.Logs[0].IdUsuario == 1);
+    Comprobar("[DM-07] rechaza un código eSif que ya existe: 'Ya existe otra sociedad con este mismo código eSif.'",
+        Captura<ApplicationException>(() => gso.CrearSociedad(new SOCIEDAD { CodigoEsif = "E001", Nombre = "Repetida", IdTipoDeEmpresa = 1, IdPais = 1 }))?.Message == "Ya existe otra sociedad con este mismo código eSif.");
+    Comprobar("[DM-07] el rechazo no distingue mayúsculas", Captura<ApplicationException>(() => gso.CrearSociedad(new SOCIEDAD { CodigoEsif = "e002", Nombre = "Repetida", IdTipoDeEmpresa = 1, IdPais = 1 })) != null);
+    Comprobar("el código eSif de una sociedad borrada se puede reutilizar", Captura<Exception>(() => gso.CrearSociedad(new SOCIEDAD { CodigoEsif = "E006", Nombre = "Reutiliza código", IdTipoDeEmpresa = 1, IdPais = 1 })) == null);
+    Comprobar("sí admite dos sociedades con el mismo nombre", Captura<Exception>(() => gso.CrearSociedad(new SOCIEDAD { CodigoEsif = "N002", Nombre = "Sociedad nueva", IdTipoDeEmpresa = 1, IdPais = 1 })) == null);
+}
+
+Console.WriteLine();
+Console.WriteLine("Sociedades: edición (GestorSociedades.ActualizarSociedad)");
+{
+    var (gso, _, almacen) = CrearSoc();
+    SOCIEDAD s = gso.ConsultarSociedad(5);
+    s.Nombre = "Filial Cinco (modificada)";
+    s.IdPais = 3;
+    gso.ActualizarSociedad(s);
+    SOCIEDAD leida = gso.ConsultarSociedad(5);
+    Comprobar("guarda nombre y país y conserva el resto", leida.Nombre == "Filial Cinco (modificada)" && leida.IdPais == 3 && leida.CodigoEsif == "E005" && leida.IdTipoDeEmpresa == 3);
+    string esperado = "Se ha modificado  la Sociedad con el nombre: Filial Cinco (ejemplo)" + NL +
+                      "\n *[Campo Nombre:]* Valor antiguo: Filial Cinco (ejemplo) - Valor nuevo: Filial Cinco (modificada) " + NL +
+                      "\n *[Campo País:]* Valor antiguo: España - Valor nuevo: Argentina ";
+    Comprobar("auditoría: solo los campos cambiados, con valor antiguo y nuevo", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 3 && almacen.Logs[0].Descripcion == esperado && almacen.Logs[0].IdSociedad == 5);
+    s.CodigoEsif = "E001";
+    Comprobar("[DM-07] rechaza cambiar a un código eSif que ya usa otra sociedad", Captura<ApplicationException>(() => gso.ActualizarSociedad(s))?.Message == "Ya existe otra sociedad con este mismo código eSif.");
+    s.CodigoEsif = "E005";
+    Comprobar("permite guardar manteniendo su propio código eSif", Captura<Exception>(() => gso.ActualizarSociedad(s)) == null);
+    Comprobar("sociedad inexistente: 'No existe la sociedad'", Captura<ApplicationException>(() => gso.ConsultarSociedad(9999))?.Message == "No existe la sociedad");
+    Comprobar("sociedad borrada: 'No existe la sociedad'", Captura<ApplicationException>(() => gso.ConsultarSociedad(6))?.Message == "No existe la sociedad");
+    Comprobar("actualizar una sociedad inexistente: 'No existe la sociedad'", Captura<ApplicationException>(() => gso.ActualizarSociedad(new SOCIEDAD { IdSociedad = 9999, CodigoEsif = "ZZZZ", Nombre = "x", IdTipoDeEmpresa = 1, IdPais = 1 }))?.Message == "No existe la sociedad");
+}
+
+Console.WriteLine();
+Console.WriteLine("Sociedades: baja (GestorSociedades.EliminarSociedad)");
+{
+    var (gso, _, almacen) = CrearSoc();
+    Comprobar("[DM-08] no elimina una sociedad con procesos asignados: 'La sociedad tiene procesos asociados.'",
+        Captura<ApplicationException>(() => gso.EliminarSociedad(1))?.Message == "La sociedad tiene procesos asociados.");
+    Comprobar("[DM-08] tampoco si su único proceso asignado está borrado (como el original)",
+        Captura<ApplicationException>(() => gso.EliminarSociedad(4))?.Message == "La sociedad tiene procesos asociados.");
+    Comprobar("[DM-08] no elimina la sociedad de un usuario: 'La sociedad tiene usuarios asociados'",
+        Captura<ApplicationException>(() => gso.EliminarSociedad(2))?.Message == "La sociedad tiene usuarios asociados");
+    Comprobar("[DM-08] tampoco si ese usuario está dado de baja (como el original)",
+        Captura<ApplicationException>(() => gso.EliminarSociedad(7))?.Message == "La sociedad tiene usuarios asociados");
+    Comprobar("[DM-08] no elimina una sociedad asignada a un usuario",
+        Captura<ApplicationException>(() => gso.EliminarSociedad(3))?.Message == "La sociedad tiene usuarios asociados");
+    Comprobar("[DM-08] los rechazos no borran ni dejan auditoría", almacen.Sociedades.Count(x => x.Borrado) == 1 && almacen.Logs.Count == 0);
+    Comprobar("sí elimina una sociedad sin uso", Captura<Exception>(() => gso.EliminarSociedad(5)) == null);
+    Comprobar("baja lógica: el registro sigue en la tabla, marcado como borrado", almacen.Sociedades.Single(x => x.IdSociedad == 5).Borrado);
+    Comprobar("auditoría de la baja", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 2
+        && almacen.Logs[0].Descripcion == "Se ha eliminado  la Sociedad con el nombre: Filial Cinco (ejemplo)" && almacen.Logs[0].IdSociedad == 5);
+    gso.ConsultarSociedadConFiltro(null, "CodigoEsif asc", 1, 20, out int total);
+    Comprobar("el listado deja de mostrarla", total == 5);
+    Comprobar("eliminar dos veces: 'No existe la sociedad'", Captura<ApplicationException>(() => gso.EliminarSociedad(5))?.Message == "No existe la sociedad");
+}
+
+Console.WriteLine();
+Console.WriteLine("Sociedades: permisos por perfil (GestorSociedades.AccionesPermitidas)");
+{
+    var (gsoAdmin, _, _) = CrearSoc();
+    Comprobar("Administrador: consultar, crear, actualizar y eliminar", gsoAdmin.AccionesPermitidas().Count == 4);
+    foreach (PerfilDeUsuario perfil in Enum.GetValues<PerfilDeUsuario>().Where(x => x != PerfilDeUsuario.Administrador))
+    {
+        var (gso, _, _) = CrearSoc((int)perfil);
+        bool soloConsulta = gso.AccionesPermitidas().SequenceEqual([GestorSociedades.AccionSociedades.ConsultarSociedad]);
+        SOCIEDAD s = gso.ConsultarSociedad(5);
+        string sinPermiso = "El usuario demo.admin no tiene permisos para realizar esta acción.";
+        bool sinAlta = Captura<SecurityException>(() => gso.CrearSociedad(new SOCIEDAD { CodigoEsif = "X", Nombre = "X", IdTipoDeEmpresa = 1, IdPais = 1 }))?.Message == sinPermiso;
+        bool sinEdicion = Captura<SecurityException>(() => gso.ActualizarSociedad(s))?.Message == sinPermiso;
+        bool sinBaja = Captura<SecurityException>(() => gso.EliminarSociedad(5))?.Message == sinPermiso;
+        Comprobar($"{perfil}: solo consulta; alta, edición y baja rechazadas", soloConsulta && sinAlta && sinEdicion && sinBaja);
+    }
+}
+
 // Comprobaciones opcionales sobre un libro Excel de datos: dotnet run --project pruebas/eVidencia.Pruebas -- <ruta.xlsx>
 if (args.Length > 0 && File.Exists(args[0]))
 {

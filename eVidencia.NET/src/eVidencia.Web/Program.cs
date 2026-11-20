@@ -45,6 +45,7 @@ if (modoDatos.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
         new FabricaConexiones(Microsoft.Data.SqlClient.SqlClientFactory.Instance, cadena));
     builder.Services.AddScoped<IRepositorioProcesos, RepositorioProcesosSql>();
     builder.Services.AddScoped<IRepositorioSubprocesos, RepositorioSubprocesosSql>();
+    builder.Services.AddScoped<IRepositorioSociedades, RepositorioSociedadesSql>();
     builder.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosSql>();
     builder.Services.AddScoped<IRepositorioLogDeEntidades, RepositorioLogDeEntidadesSql>();
     builder.Services.AddSingleton(new InfoDemo(usuarioFijo, "SQL Server"));
@@ -68,6 +69,8 @@ else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDa
         {
             almacen = AlmacenMemoria.DesdeExcel(ruta);
             descripcion = almacen.Origen + " (los cambios no se guardan en el libro)";
+            if (almacen.SociedadesDeEjemplo)
+                descripcion += " · Sociedades y países de ejemplo: el libro no incluye esas hojas";
         }
         else
         {
@@ -95,6 +98,7 @@ else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDa
     builder.Services.AddSingleton(almacen);
     builder.Services.AddScoped<IRepositorioProcesos, RepositorioProcesosMemoria>();
     builder.Services.AddScoped<IRepositorioSubprocesos, RepositorioSubprocesosMemoria>();
+    builder.Services.AddScoped<IRepositorioSociedades, RepositorioSociedadesMemoria>();
     builder.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosMemoria>();
     builder.Services.AddScoped<IRepositorioLogDeEntidades, RepositorioLogDeEntidadesMemoria>();
     builder.Services.AddSingleton(new InfoDemo(usuarioFijo, descripcion));
@@ -112,6 +116,8 @@ builder.Services.AddScoped<GestorUsuarios>();
 builder.Services.AddScoped<GestorLogDeEntidades>();
 builder.Services.AddScoped<GestorSubprocesos>();
 builder.Services.AddScoped<GestorProcesos>();
+builder.Services.AddScoped<GestorDatosMaestros>();
+builder.Services.AddScoped<GestorSociedades>();
 
 var app = builder.Build();
 
@@ -195,6 +201,34 @@ app.MapPost("/Administracion/AdministracionService.asmx/ConsultarGridSubprocesos
     }).ToList();
 
     var respuesta = RespuestaGrid<object>.Crear(page, rows, numeroElementosTotales, listaDeSubprocesos.Cast<object>().ToList());
+    return Results.Text(JsonSerializer.Serialize(respuesta, opcionesJson), "application/json");
+});
+
+// ---------------------------------------------------------------------------------------------
+// Servicio del listado de Sociedades.
+// Origen: eVidencias.Web/Administracion/AdministracionService.asmx.cs:65-81 (ConsultarGridSociedades).
+// ---------------------------------------------------------------------------------------------
+app.MapPost("/Administracion/AdministracionService.asmx/ConsultarGridSociedades", async (HttpContext http, GestorSociedades gestorSociedades) =>
+{
+    IFormCollection form = await http.Request.ReadFormAsync();
+    int page = int.TryParse(form["page"], out int p) ? p : -1;
+    int rows = int.TryParse(form["rows"], out int r) ? r : -1;
+    string orden = form["sidx"].ToString() + " " + form["sord"].ToString();
+    string filtro = form["filtro"].ToString();
+
+    FiltroSOCIEDAD? filtroSociedad = string.IsNullOrWhiteSpace(filtro) ? null : JsonSerializer.Deserialize<FiltroSOCIEDAD>(filtro, opcionesFiltro);
+
+    List<SOCIEDAD> sociedades = gestorSociedades.ConsultarSociedadConFiltro(filtroSociedad, orden, page, rows, out int numeroElementosTotales);
+    var listaDeSociedades = sociedades.Select(s => new
+    {
+        s.IdSociedad,
+        CodigoEsif = WebUtility.HtmlEncode(s.CodigoEsif),
+        Nombre = WebUtility.HtmlEncode(s.Nombre),
+        TipoDeEmpresa = WebUtility.HtmlEncode(s.TIPO_DE_EMPRESA!.Nombre),
+        Pais = WebUtility.HtmlEncode(s.PAIS!.Nombre)
+    }).ToList();
+
+    var respuesta = RespuestaGrid<object>.Crear(page, rows, numeroElementosTotales, listaDeSociedades.Cast<object>().ToList());
     return Results.Text(JsonSerializer.Serialize(respuesta, opcionesJson), "application/json");
 });
 

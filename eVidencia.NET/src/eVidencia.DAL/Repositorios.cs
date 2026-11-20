@@ -64,6 +64,42 @@ public interface IRepositorioSubprocesos
     int ContarProcesosAsociadosNoBorrados(int idSubproceso);
 }
 
+/// <summary>Número de filas de otras tablas que apuntan a una sociedad.</summary>
+public readonly record struct UsoDeSociedad(int ProcesosAsociados, int Usuarios, int UsuariosAuditores);
+
+public interface IRepositorioSociedades
+{
+    /// <summary>
+    /// Sociedades no borradas que cumplen el filtro, con su TIPO_DE_EMPRESA y su PAIS, ordenadas y paginadas (página desde 1).
+    /// Si se indica idUsuarioAsignado, solo las sociedades asignadas a ese usuario en USUARIO_SOCIEDAD_AUDITORES.
+    /// </summary>
+    List<SOCIEDAD> ObtenerFiltrados(FiltroSOCIEDAD? filtro, int? idUsuarioAsignado, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales);
+
+    /// <summary>La sociedad no borrada con ese identificador, con su TIPO_DE_EMPRESA y su PAIS; null si no existe.</summary>
+    SOCIEDAD? ObtenerPorId(int idSociedad);
+
+    /// <summary>Número de sociedades no borradas con ese código eSif, sin contar la indicada.</summary>
+    int ContarConMismoCodigoEsif(string? codigoEsif, int idSociedadExcluida);
+
+    int Insertar(SOCIEDAD sociedad);
+
+    /// <summary>Guarda código eSif, nombre, país y tipo de empresa.</summary>
+    void Actualizar(SOCIEDAD sociedad);
+
+    void MarcarBorrado(int idSociedad);
+
+    /// <summary>
+    /// Filas que apuntan a la sociedad en PROCESO_ASOCIADO, USUARIO y USUARIO_SOCIEDAD_AUDITORES,
+    /// borradas o no (como en el origen). Una sola consulta en lugar de las tres colecciones que carga el original.
+    /// </summary>
+    UsoDeSociedad ObtenerUso(int idSociedad);
+
+    List<TIPO_DE_EMPRESA> ObtenerTiposDeEmpresa();
+
+    /// <summary>Todos los países, ordenados por nombre.</summary>
+    List<PAIS> ObtenerPaises();
+}
+
 public interface IRepositorioUsuarios
 {
     /// <summary>Usuarios no borrados con ese UID, con su PERFIL_DE_USUARIO.</summary>
@@ -95,4 +131,16 @@ public static class CamposOrdenSubproceso
     public const string Proceso = "PROCESO.Nombre";
 
     public static readonly string[] Todos = [IdSubproceso, Codigo, Nombre, Proceso];
+}
+
+/// <summary>Campos por los que se puede ordenar el listado de Sociedades (colModel de Sociedades.aspx).</summary>
+public static class CamposOrdenSociedad
+{
+    public const string IdSociedad = "IdSociedad";
+    public const string CodigoEsif = "CodigoEsif";
+    public const string Nombre = "Nombre";
+    public const string TipoDeEmpresa = "TIPO_DE_EMPRESA.Nombre";
+    public const string Pais = "PAIS.Nombre";
+
+    public static readonly string[] Todos = [IdSociedad, CodigoEsif, Nombre, TipoDeEmpresa, Pais];
 }

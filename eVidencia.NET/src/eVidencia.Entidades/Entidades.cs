@@ -36,7 +36,39 @@ public class PROCESO_ASOCIADO
     public int IdProcesoAsociado { get; set; }
     public int IdProceso { get; set; }
     public int? IdSubproceso { get; set; }
+    public int IdSociedad { get; set; }
     public bool Borrado { get; set; }
+}
+
+public class PAIS
+{
+    public int IdPais { get; set; }
+    public string Nombre { get; set; } = "";
+}
+
+public class TIPO_DE_EMPRESA
+{
+    public int IdTipoDeEmpresa { get; set; }
+    public string Nombre { get; set; } = "";
+}
+
+public class SOCIEDAD
+{
+    public int IdSociedad { get; set; }
+    public string? CodigoEsif { get; set; }
+    public string? Nombre { get; set; }
+    public int IdTipoDeEmpresa { get; set; }
+    public int IdPais { get; set; }
+    public bool Borrado { get; set; }
+    public TIPO_DE_EMPRESA? TIPO_DE_EMPRESA { get; set; }
+    public PAIS? PAIS { get; set; }
+}
+
+/// <summary>Sociedades asignadas a un usuario (tabla de relación del modelo original).</summary>
+public class USUARIO_SOCIEDAD_AUDITORES
+{
+    public int IdUsuario { get; set; }
+    public int IdSociedad { get; set; }
 }
 
 public class PERFIL_DE_USUARIO
@@ -52,6 +84,7 @@ public class USUARIO
     public string Apellidos { get; set; } = "";
     public string? UID { get; set; }
     public int IdPerfilDeUsuario { get; set; }
+    public int? IdSociedad { get; set; }
     public bool Borrado { get; set; }
     public PERFIL_DE_USUARIO? PERFIL_DE_USUARIO { get; set; }
 }

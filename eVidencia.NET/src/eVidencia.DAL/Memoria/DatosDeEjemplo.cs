@@ -36,7 +36,46 @@ public static class DatosDeEjemplo
 
     public static List<USUARIO> Usuarios() =>
     [
-        new() { IdUsuario = 1, Nombre = "Demo", Apellidos = "Usuario", UID = UidUsuarioDemo, IdPerfilDeUsuario = 1 },
+        new() { IdUsuario = 1, Nombre = "Demo", Apellidos = "Usuario", UID = UidUsuarioDemo, IdPerfilDeUsuario = 1, IdSociedad = 2 },
+        // Usuario dado de baja: su sociedad (la 7) sigue sin poder eliminarse, como en el origen.
+        new() { IdUsuario = 2, Nombre = "Baja", Apellidos = "Usuario", UID = "demo.baja", IdPerfilDeUsuario = 6, IdSociedad = 7, Borrado = true },
+    ];
+
+    public static List<PAIS> Paises() =>
+    [
+        new() { IdPais = 1, Nombre = "España" },
+        new() { IdPais = 2, Nombre = "Brasil" },
+        new() { IdPais = 3, Nombre = "Argentina" },
+        new() { IdPais = 4, Nombre = "Chile" },
+    ];
+
+    /// <summary>Valores de la tabla TIPO_DE_EMPRESA (los mismos de eVidencias.BLL/DatosMaestros.resx).</summary>
+    public static List<TIPO_DE_EMPRESA> TiposDeEmpresa() =>
+    [
+        new() { IdTipoDeEmpresa = 1, Nombre = "Auditora" },
+        new() { IdTipoDeEmpresa = 2, Nombre = "Auditada" },
+        new() { IdTipoDeEmpresa = 3, Nombre = "Ambas" },
+    ];
+
+    /// <summary>
+    /// Sociedades inventadas. La 1 tiene procesos asignados; la 2 es la del usuario de la demo; la 3 está asignada
+    /// al usuario de la demo; la 4 solo tiene un proceso asignado borrado; la 5 no se usa; la 6 está borrada;
+    /// la 7 es la de un usuario borrado.
+    /// </summary>
+    public static List<SOCIEDAD> Sociedades() =>
+    [
+        new() { IdSociedad = 1, CodigoEsif = "E001", Nombre = "Sociedad Uno (ejemplo)", IdTipoDeEmpresa = 1, IdPais = 1 },
+        new() { IdSociedad = 2, CodigoEsif = "E002", Nombre = "Sociedad Dos (ejemplo)", IdTipoDeEmpresa = 2, IdPais = 2 },
+        new() { IdSociedad = 3, CodigoEsif = "E003", Nombre = "Sociedad Tres (ejemplo)", IdTipoDeEmpresa = 3, IdPais = 3 },
+        new() { IdSociedad = 4, CodigoEsif = "E004", Nombre = "Sociedad Cuatro (ejemplo)", IdTipoDeEmpresa = 2, IdPais = 4 },
+        new() { IdSociedad = 5, CodigoEsif = "E005", Nombre = "Filial Cinco (ejemplo)", IdTipoDeEmpresa = 3, IdPais = 1 },
+        new() { IdSociedad = 6, CodigoEsif = "E006", Nombre = "Sociedad Seis, borrada (ejemplo)", IdTipoDeEmpresa = 2, IdPais = 1, Borrado = true },
+        new() { IdSociedad = 7, CodigoEsif = "E007", Nombre = "Filial Siete (ejemplo)", IdTipoDeEmpresa = 2, IdPais = 2 },
+    ];
+
+    public static List<USUARIO_SOCIEDAD_AUDITORES> UsuariosSociedadAuditores() =>
+    [
+        new() { IdUsuario = 1, IdSociedad = 3 },
     ];
 
     public static List<PROCESO> Procesos() =>
@@ -89,8 +128,8 @@ public static class DatosDeEjemplo
     /// </summary>
     public static List<PROCESO_ASOCIADO> ProcesosAsociados() =>
     [
-        new() { IdProcesoAsociado = 1, IdProceso = 1, IdSubproceso = 101 },
-        new() { IdProcesoAsociado = 2, IdProceso = 9, IdSubproceso = null },
-        new() { IdProcesoAsociado = 3, IdProceso = 2, IdSubproceso = 103, Borrado = true },
+        new() { IdProcesoAsociado = 1, IdProceso = 1, IdSubproceso = 101, IdSociedad = 1 },
+        new() { IdProcesoAsociado = 2, IdProceso = 9, IdSubproceso = null, IdSociedad = 1 },
+        new() { IdProcesoAsociado = 3, IdProceso = 2, IdSubproceso = 103, IdSociedad = 4, Borrado = true },
     ];
 }
