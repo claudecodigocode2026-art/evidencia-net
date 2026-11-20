@@ -10,10 +10,22 @@ using eVidencia.Entidades.Filtros;
 
 int correctas = 0, fallidas = 0;
 
+// Una comprobación cuyo texto empieza por "[DM-02]" pertenece a ese caso del
+// documento «eVidencia - Plan de Pruebas (PRO 1.15)». Al final se resume por caso.
+var porCaso = new SortedDictionary<string, (int Correctas, int Fallidas)>(StringComparer.Ordinal);
+
 void Comprobar(string regla, bool condicion)
 {
     if (condicion) { correctas++; Console.WriteLine("  OK    " + regla); }
     else { fallidas++; Console.WriteLine("  FALLO " + regla); }
+
+    int cierre = regla.IndexOf(']');
+    if (regla.StartsWith('[') && cierre > 1)
+    {
+        string caso = regla[1..cierre];
+        porCaso.TryGetValue(caso, out var cuenta);
+        porCaso[caso] = condicion ? (cuenta.Correctas + 1, cuenta.Fallidas) : (cuenta.Correctas, cuenta.Fallidas + 1);
+    }
 }
 
 T? Captura<T>(Action accion) where T : Exception
@@ -40,22 +52,22 @@ Console.WriteLine("Listado (GestorProcesos.ConsultarProcesoConFiltro)");
 {
     var (gp, _) = Crear();
     var p1 = gp.ConsultarProcesoConFiltro(null, "Codigo asc", 1, 20, out int total);
-    Comprobar("devuelve el total de procesos no borrados (26)", total == 26);
-    Comprobar("página 1 con 20 filas", p1.Count == 20);
-    Comprobar("orden inicial por Código ascendente", p1[0].Codigo == "EJ-01" && p1[19].Codigo == "EJ-20");
+    Comprobar("[DM-17] devuelve el total de procesos no borrados (26)", total == 26);
+    Comprobar("[DM-17] página 1 con 20 filas", p1.Count == 20);
+    Comprobar("[DM-17] orden inicial por Código ascendente", p1[0].Codigo == "EJ-01" && p1[19].Codigo == "EJ-20");
     var p2 = gp.ConsultarProcesoConFiltro(null, "Codigo asc", 2, 20, out _);
-    Comprobar("página 2 con las 6 filas restantes", p2.Count == 6 && p2[0].Codigo == "EJ-21");
+    Comprobar("[DM-17] página 2 con las 6 filas restantes", p2.Count == 6 && p2[0].Codigo == "EJ-21");
     var desc = gp.ConsultarProcesoConFiltro(null, "Codigo desc", 1, 20, out _);
-    Comprobar("orden descendente", desc[0].Codigo == "EJ-26");
+    Comprobar("[DM-17] orden descendente", desc[0].Codigo == "EJ-26");
     var porTipo = gp.ConsultarProcesoConFiltro(null, "TIPO_DE_PROCESO.Nombre asc", 1, 20, out _);
-    Comprobar("orden por la columna Tipo de Proceso", porTipo[0].TIPO_DE_PROCESO!.Nombre == "Comercialización y ventas");
+    Comprobar("[DM-17] orden por la columna Tipo de Proceso", porTipo[0].TIPO_DE_PROCESO!.Nombre == "Comercialización y ventas");
     var f1 = gp.ConsultarProcesoConFiltro(new FiltroPROCESO { Codigo = "EJ-1" }, "Codigo asc", 1, 20, out int t1);
-    Comprobar("filtro Código: contiene el texto", t1 == 10 && f1.All(p => p.Codigo!.Contains("EJ-1")));
+    Comprobar("[DM-17] filtro Código: contiene el texto", t1 == 10 && f1.All(p => p.Codigo!.Contains("EJ-1")));
     gp.ConsultarProcesoConFiltro(new FiltroPROCESO { Nombre = "gestión" }, "Codigo asc", 1, 20, out int t2);
-    Comprobar("filtro Nombre: contiene el texto, sin distinguir mayúsculas", t2 == 7);
+    Comprobar("[DM-17] filtro Nombre: contiene el texto, sin distinguir mayúsculas", t2 == 7);
     gp.ConsultarProcesoConFiltro(new FiltroPROCESO { Codigo = "EJ-2", Nombre = "ejemplo" }, "Codigo asc", 1, 20, out int t3);
-    Comprobar("los dos filtros se combinan con Y", t3 == 7);
-    Comprobar("campo de orden no permitido se rechaza", Captura<ArgumentException>(() => gp.ConsultarProcesoConFiltro(null, "Borrado; DROP asc", 1, 20, out _)) != null);
+    Comprobar("[DM-17] los dos filtros se combinan con Y", t3 == 7);
+    Comprobar("[DM-17] campo de orden no permitido se rechaza", Captura<ArgumentException>(() => gp.ConsultarProcesoConFiltro(null, "Borrado; DROP asc", 1, 20, out _)) != null);
 }
 
 Console.WriteLine("Alta (GestorProcesos.CrearProceso)");
@@ -63,20 +75,20 @@ Console.WriteLine("Alta (GestorProcesos.CrearProceso)");
     var (gp, almacen) = Crear();
     int id = gp.CrearProceso(new PROCESO { Codigo = "NUEVO", Nombre = "Proceso nuevo", IdTipoDeProceso = 11 });
     PROCESO creado = gp.ConsultarProceso(id);
-    Comprobar("crea el proceso con sus datos", creado.Codigo == "NUEVO" && creado.Nombre == "Proceso nuevo" && creado.IdTipoDeProceso == 11);
+    Comprobar("[DM-01] crea el proceso con sus datos", creado.Codigo == "NUEVO" && creado.Nombre == "Proceso nuevo" && creado.IdTipoDeProceso == 11);
     SUBPROCESO? otros = almacen.Subprocesos.FirstOrDefault(s => s.IdProceso == id);
-    Comprobar("crea el subproceso 'Otros' (código vacío, TipoOtros)", otros != null && otros.Nombre == "Otros" && otros.Codigo == "" && otros.TipoOtros);
-    Comprobar("registra dos líneas de auditoría: alta de proceso y alta de subproceso", almacen.Logs.Count == 2
+    Comprobar("[DM-01] crea el subproceso 'Otros' (código vacío, TipoOtros)", otros != null && otros.Nombre == "Otros" && otros.Codigo == "" && otros.TipoOtros);
+    Comprobar("[DM-01] registra dos líneas de auditoría: alta de proceso y alta de subproceso", almacen.Logs.Count == 2
         && almacen.Logs[0].IdTipoDeAccion == 1 && almacen.Logs[0].IdProceso == id && almacen.Logs[0].IdSubproceso == null
         && almacen.Logs[1].IdTipoDeAccion == 1 && almacen.Logs[1].IdProceso == id && almacen.Logs[1].IdSubproceso == otros!.IdSubproceso);
     string esperado = "Se ha creado el Proceso con el nombre: Proceso nuevo" + NL +
         "\n *[Campo Código:]* Valor nuevo: NUEVO " + NL +
         "\n *[Campo Nombre:]* Valor nuevo: Proceso nuevo " + NL +
         "\n *[Campo Tipo de Proceso:]* Valor antiguo:  - Valor nuevo: Cumplimiento ";
-    Comprobar("texto de auditoría del alta igual al formato del original", almacen.Logs[0].Descripcion == esperado);
-    Comprobar("la auditoría queda a nombre del usuario autenticado", almacen.Logs[0].IdUsuario == 1);
+    Comprobar("[DM-01] texto de auditoría del alta igual al formato del original", almacen.Logs[0].Descripcion == esperado);
+    Comprobar("[DM-01] la auditoría queda a nombre del usuario autenticado", almacen.Logs[0].IdUsuario == 1);
     var ex = Captura<ApplicationException>(() => gp.CrearProceso(new PROCESO { Codigo = "EJ-05", Nombre = "Duplicado", IdTipoDeProceso = 1 }));
-    Comprobar("rechaza un código que ya existe: 'Ya existe otro proceso con este mismo código'", ex?.Message == "Ya existe otro proceso con este mismo código");
+    Comprobar("[DM-02] rechaza un código que ya existe: 'Ya existe otro proceso con este mismo código'", ex?.Message == "Ya existe otro proceso con este mismo código");
 }
 
 Console.WriteLine("Edición (GestorProcesos.ActualizarProceso)");
@@ -94,7 +106,7 @@ Console.WriteLine("Edición (GestorProcesos.ActualizarProceso)");
     Comprobar("auditoría: solo los campos cambiados, con valor antiguo y nuevo", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 3 && almacen.Logs[0].Descripcion == esperado);
     p = gp.ConsultarProceso(4);
     p.Codigo = "EJ-05";
-    Comprobar("rechaza cambiar a un código que ya usa otro proceso", Captura<ApplicationException>(() => gp.ActualizarProceso(p))?.Message == "Ya existe otro proceso con este mismo código");
+    Comprobar("[DM-02] rechaza cambiar a un código que ya usa otro proceso", Captura<ApplicationException>(() => gp.ActualizarProceso(p))?.Message == "Ya existe otro proceso con este mismo código");
     p = gp.ConsultarProceso(4);
     Comprobar("permite guardar manteniendo su propio código", Captura<Exception>(() => gp.ActualizarProceso(p)) == null);
     Comprobar("proceso inexistente: 'No existe el proceso'", Captura<ApplicationException>(() => gp.ConsultarProceso(9999))?.Message == "No existe el proceso");
@@ -104,16 +116,16 @@ Console.WriteLine("Baja (GestorProcesos.EliminarProceso)");
 {
     var (gp, almacen) = Crear();
     gp.EliminarProceso(5);
-    Comprobar("baja lógica: el registro sigue en la tabla, marcado como borrado", almacen.Procesos.Single(p => p.IdProceso == 5).Borrado);
-    Comprobar("el proceso deja de poder consultarse", Captura<ApplicationException>(() => gp.ConsultarProceso(5))?.Message == "No existe el proceso");
+    Comprobar("[DM-04] baja lógica: el registro sigue en la tabla, marcado como borrado", almacen.Procesos.Single(p => p.IdProceso == 5).Borrado);
+    Comprobar("[DM-04] el proceso deja de poder consultarse", Captura<ApplicationException>(() => gp.ConsultarProceso(5))?.Message == "No existe el proceso");
     gp.ConsultarProcesoConFiltro(null, "Codigo asc", 1, 20, out int total);
-    Comprobar("el listado deja de mostrarlo", total == 25);
-    Comprobar("marca como borrado su subproceso 'Otros'", almacen.Subprocesos.Single(s => s.IdProceso == 5).Borrado);
-    Comprobar("auditoría de la baja", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 2
+    Comprobar("[DM-04] el listado deja de mostrarlo", total == 25);
+    Comprobar("[DM-04] marca como borrado su subproceso 'Otros'", almacen.Subprocesos.Single(s => s.IdProceso == 5).Borrado);
+    Comprobar("[DM-04] auditoría de la baja", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 2
         && almacen.Logs[0].Descripcion == "Se ha eliminado el Proceso con el nombre: Homologación de proveedores (ejemplo)");
-    Comprobar("no elimina un proceso con procesos asociados", Captura<ApplicationException>(() => gp.EliminarProceso(1))?.Message == "El Proceso tiene procesos asociados"
+    Comprobar("[DM-03] no elimina un proceso con procesos asociados", Captura<ApplicationException>(() => gp.EliminarProceso(1))?.Message == "El Proceso tiene procesos asociados"
         && !almacen.Procesos.Single(p => p.IdProceso == 1).Borrado);
-    Comprobar("el código de un proceso borrado se puede reutilizar", Captura<Exception>(() => gp.CrearProceso(new PROCESO { Codigo = "EJ-05", Nombre = "Reutilizado", IdTipoDeProceso = 1 })) == null);
+    Comprobar("[DM-04] el código de un proceso borrado se puede reutilizar", Captura<Exception>(() => gp.CrearProceso(new PROCESO { Codigo = "EJ-05", Nombre = "Reutilizado", IdTipoDeProceso = 1 })) == null);
 }
 
 Console.WriteLine("Permisos (GestorProcesos.AccionesPermitidas)");
@@ -150,12 +162,18 @@ if (args.Length > 0 && File.Exists(args[0]))
     Comprobar("lee los procesos y todos tienen tipo de proceso", totalExcel > 0 && lista.All(p => p.TIPO_DE_PROCESO != null));
     Comprobar("lee los tipos de proceso para el desplegable", gp.ConsultarTiposProcesos().Count == excel.TiposDeProceso.Count);
     int conAsociado = excel.ProcesosAsociados.First();
-    Comprobar("un proceso con procesos asociados no se puede eliminar", Captura<ApplicationException>(() => gp.EliminarProceso(conAsociado))?.Message == "El Proceso tiene procesos asociados");
+    Comprobar("[DM-03] un proceso con procesos asociados no se puede eliminar", Captura<ApplicationException>(() => gp.EliminarProceso(conAsociado))?.Message == "El Proceso tiene procesos asociados");
     int nuevo = gp.CrearProceso(new PROCESO { Codigo = "ZZ-PRB", Nombre = "Prueba de carga", IdTipoDeProceso = excel.TiposDeProceso[0].IdTipoDeProceso });
     Comprobar("alta sobre los datos del libro y numeración del log a continuación del origen", excel.Logs.Count == 2 && excel.Logs[0].IdLogDeEntidades == excel.LogsEnOrigen + 1);
     gp.EliminarProceso(nuevo);
     Comprobar("baja del proceso recién creado", excel.Procesos.Single(p => p.IdProceso == nuevo).Borrado);
 }
+
+Console.WriteLine();
+Console.WriteLine("Casos del Plan de Pruebas (PRO 1.15) con comprobación automática");
+foreach (var (caso, cuenta) in porCaso)
+    Console.WriteLine($"  {(cuenta.Fallidas == 0 ? "OK   " : "FALLO")} {caso}: {cuenta.Correctas + cuenta.Fallidas} comprobaciones");
+Console.WriteLine($"  {porCaso.Count} casos cubiertos; {correctas + fallidas - porCaso.Values.Sum(c => c.Correctas + c.Fallidas)} comprobaciones sin caso en el plan");
 
 Console.WriteLine();
 Console.WriteLine($"Resultado: {correctas} correctas, {fallidas} fallidas");
