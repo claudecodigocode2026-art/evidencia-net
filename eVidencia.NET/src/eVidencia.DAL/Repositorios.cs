@@ -100,6 +100,34 @@ public interface IRepositorioSociedades
     List<PAIS> ObtenerPaises();
 }
 
+/// <summary>Número de filas de otras tablas que apuntan a un tipo de auditoría.</summary>
+public readonly record struct UsoDeTipoDeAuditoria(int ProcesosAsociados, int Usuarios);
+
+public interface IRepositorioTiposDeAuditoria
+{
+    /// <summary>Tipos de auditoría no borrados que cumplen el filtro, ordenados y paginados (página desde 1).</summary>
+    List<TIPO_DE_AUDITORIA> ObtenerFiltrados(FiltroTIPO_DE_AUDITORIA? filtro, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales);
+
+    /// <summary>El tipo de auditoría no borrado con ese identificador; null si no existe.</summary>
+    TIPO_DE_AUDITORIA? ObtenerPorId(int idTipoDeAuditoria);
+
+    /// <summary>Número de tipos de auditoría no borrados con ese código, sin contar el indicado.</summary>
+    int ContarConMismoCodigo(string? codigo, int idTipoDeAuditoriaExcluido);
+
+    int Insertar(TIPO_DE_AUDITORIA tipoDeAuditoria);
+
+    /// <summary>Guarda código y descripción.</summary>
+    void Actualizar(TIPO_DE_AUDITORIA tipoDeAuditoria);
+
+    void MarcarBorrado(int idTipoDeAuditoria);
+
+    /// <summary>
+    /// Filas que apuntan al tipo de auditoría en PROCESO_ASOCIADO y USUARIO, borradas o no (como en el origen).
+    /// Una sola consulta en lugar de las dos colecciones que carga el original.
+    /// </summary>
+    UsoDeTipoDeAuditoria ObtenerUso(int idTipoDeAuditoria);
+}
+
 public interface IRepositorioUsuarios
 {
     /// <summary>Usuarios no borrados con ese UID, con su PERFIL_DE_USUARIO.</summary>
@@ -143,4 +171,14 @@ public static class CamposOrdenSociedad
     public const string Pais = "PAIS.Nombre";
 
     public static readonly string[] Todos = [IdSociedad, CodigoEsif, Nombre, TipoDeEmpresa, Pais];
+}
+
+/// <summary>Campos por los que se puede ordenar el listado de Tipos de Auditoría (colModel de TiposDeAuditoria.aspx).</summary>
+public static class CamposOrdenTipoDeAuditoria
+{
+    public const string IdTipoDeAuditoria = "IdTipoDeAuditoria";
+    public const string Codigo = "Codigo";
+    public const string Descripcion = "Descripcion";
+
+    public static readonly string[] Todos = [IdTipoDeAuditoria, Codigo, Descripcion];
 }

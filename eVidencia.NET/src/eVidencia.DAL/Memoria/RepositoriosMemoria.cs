@@ -23,6 +23,9 @@ public sealed class AlmacenMemoria
     public List<SUBPROCESO> Subprocesos { get; private init; } = [];
     /// <summary>Filas de PROCESO_ASOCIADO (solo las columnas que usan las pantallas migradas).</summary>
     public List<PROCESO_ASOCIADO> ProcesosAsociados { get; private init; } = [];
+    public List<TIPO_DE_AUDITORIA> TiposDeAuditoria { get; private init; } = [];
+    /// <summary>True si los tipos de auditoría no vienen del libro Excel y se han generado como ejemplo.</summary>
+    public bool TiposDeAuditoriaDeEjemplo { get; private init; }
     public List<PAIS> Paises { get; private init; } = [];
     public List<TIPO_DE_EMPRESA> TiposDeEmpresa { get; private init; } = [];
     public List<SOCIEDAD> Sociedades { get; private init; } = [];
@@ -56,6 +59,8 @@ public sealed class AlmacenMemoria
             Procesos = procesos,
             Subprocesos = subprocesos,
             ProcesosAsociados = DatosDeEjemplo.ProcesosAsociados(),
+            TiposDeAuditoria = DatosDeEjemplo.TiposDeAuditoria(),
+            TiposDeAuditoriaDeEjemplo = true,
             Paises = DatosDeEjemplo.Paises(),
             TiposDeEmpresa = DatosDeEjemplo.TiposDeEmpresa(),
             Sociedades = DatosDeEjemplo.Sociedades(),
@@ -81,6 +86,7 @@ public sealed class AlmacenMemoria
             UID = f["UID"],
             IdPerfilDeUsuario = ValorXlsx.Entero(f["IdPerfilDeUsuario"]),
             IdSociedad = f.ContainsKey("IdSociedad") ? ValorXlsx.EnteroONulo(f["IdSociedad"]) : null,
+            IdTipoDeAuditoria = f.ContainsKey("IdTipoDeAuditoria") ? ValorXlsx.EnteroONulo(f["IdTipoDeAuditoria"]) : null,
             Borrado = ValorXlsx.Logico(f["Borrado"])
         }).ToList();
 
@@ -90,6 +96,7 @@ public sealed class AlmacenMemoria
             IdProceso = ValorXlsx.Entero(f["IdProceso"]),
             IdSubproceso = ValorXlsx.EnteroONulo(f["IdSubproceso"]),
             IdSociedad = f.ContainsKey("IdSociedad") ? ValorXlsx.EnteroONulo(f["IdSociedad"]) ?? 0 : 0,
+            IdTipoDeAuditoria = f.ContainsKey("IdTipoDeAuditoria") ? ValorXlsx.EnteroONulo(f["IdTipoDeAuditoria"]) ?? 0 : 0,
             Borrado = ValorXlsx.Logico(f["Borrado"])
         }).ToList();
 
@@ -132,8 +139,31 @@ public sealed class AlmacenMemoria
               }).ToList()
             : [];
 
+        // Tipos de auditoría: igual que las sociedades, si el libro no trae la hoja se generan de ejemplo
+        // con los identificadores que usan los usuarios y los procesos asignados del libro.
+        bool hayHojaTipoDeAuditoria = libro.ExisteHoja("TIPO_DE_AUDITORIA");
+        List<TIPO_DE_AUDITORIA> tiposDeAuditoria = hayHojaTipoDeAuditoria
+            ? libro.LeerTabla("TIPO_DE_AUDITORIA").Select(f => new TIPO_DE_AUDITORIA
+              {
+                  IdTipoDeAuditoria = ValorXlsx.Entero(f["IdTipoDeAuditoria"]),
+                  Codigo = f["Codigo"],
+                  Descripcion = f["Descripcion"],
+                  Borrado = ValorXlsx.Logico(f["Borrado"])
+              }).ToList()
+            : usuarios.Where(u => u.IdTipoDeAuditoria != null).Select(u => u.IdTipoDeAuditoria!.Value)
+                .Concat(procesosAsociados.Select(pa => pa.IdTipoDeAuditoria))
+                .Where(id => id > 0).Distinct().Order()
+                .Select(id => new TIPO_DE_AUDITORIA
+                {
+                    IdTipoDeAuditoria = id,
+                    Codigo = (id % 100).ToString("00"),
+                    Descripcion = "Tipo de auditoría " + id + " (ejemplo)"
+                }).ToList();
+
         return new AlmacenMemoria
         {
+            TiposDeAuditoria = tiposDeAuditoria,
+            TiposDeAuditoriaDeEjemplo = !hayHojaTipoDeAuditoria,
             Paises = paises,
             TiposDeEmpresa = tiposDeEmpresa,
             Sociedades = sociedades,
@@ -595,6 +625,105 @@ public sealed class RepositorioSociedadesMemoria(AlmacenMemoria almacen) : IRepo
     }
 }
 
+public sealed class RepositorioTiposDeAuditoriaMemoria(AlmacenMemoria almacen) : IRepositorioTiposDeAuditoria
+{
+    // Las búsquedas y comparaciones no distinguen mayúsculas, como la intercalación habitual de SQL Server.
+    private const StringComparison Comparacion = StringComparison.OrdinalIgnoreCase;
+
+    public List<TIPO_DE_AUDITORIA> ObtenerFiltrados(FiltroTIPO_DE_AUDITORIA? filtro, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales)
+    {
+        List<CriterioOrden> criterios = OrdenGrid.Interpretar(orden, CamposOrdenTipoDeAuditoria.Todos);
+        if (criterios.Count == 0)
+            throw new ArgumentException("No se ha indicado el orden del listado.");
+
+        lock (almacen.Cerrojo)
+        {
+            IEnumerable<TIPO_DE_AUDITORIA> consulta = almacen.TiposDeAuditoria.Where(t => !t.Borrado);
+            if (filtro != null)
+            {
+                if (!string.IsNullOrEmpty(filtro.Codigo))
+                    consulta = consulta.Where(t => (t.Codigo ?? "").Contains(filtro.Codigo, Comparacion));
+                if (!string.IsNullOrEmpty(filtro.Descripcion))
+                    consulta = consulta.Where(t => (t.Descripcion ?? "").Contains(filtro.Descripcion, Comparacion));
+            }
+
+            List<TIPO_DE_AUDITORIA> filtrados = consulta.Select(Copiar).ToList();
+            numeroElementosTotales = filtrados.Count;
+
+            var comparador = RepositorioProcesosMemoria.ComparadorClave.Instancia;
+            IOrderedEnumerable<TIPO_DE_AUDITORIA>? ordenados = null;
+            foreach (CriterioOrden c in criterios)
+            {
+                Func<TIPO_DE_AUDITORIA, object?> clave = c.Campo switch
+                {
+                    CamposOrdenTipoDeAuditoria.IdTipoDeAuditoria => t => t.IdTipoDeAuditoria,
+                    CamposOrdenTipoDeAuditoria.Codigo => t => t.Codigo,
+                    _ => t => t.Descripcion
+                };
+                ordenados = ordenados == null
+                    ? (c.Descendente ? filtrados.OrderByDescending(clave, comparador) : filtrados.OrderBy(clave, comparador))
+                    : (c.Descendente ? ordenados.ThenByDescending(clave, comparador) : ordenados.ThenBy(clave, comparador));
+            }
+
+            return ordenados!.Skip(numeroElementosPorPagina * (numeroPagina - 1)).Take(numeroElementosPorPagina).ToList();
+        }
+    }
+
+    public TIPO_DE_AUDITORIA? ObtenerPorId(int idTipoDeAuditoria)
+    {
+        lock (almacen.Cerrojo)
+        {
+            TIPO_DE_AUDITORIA? t = almacen.TiposDeAuditoria.FirstOrDefault(x => x.IdTipoDeAuditoria == idTipoDeAuditoria && !x.Borrado);
+            return t == null ? null : Copiar(t);
+        }
+    }
+
+    public int ContarConMismoCodigo(string? codigo, int idTipoDeAuditoriaExcluido)
+    {
+        lock (almacen.Cerrojo)
+            return almacen.TiposDeAuditoria.Count(t => string.Equals(t.Codigo, codigo, Comparacion) && t.IdTipoDeAuditoria != idTipoDeAuditoriaExcluido && !t.Borrado);
+    }
+
+    public int Insertar(TIPO_DE_AUDITORIA tipoDeAuditoria)
+    {
+        lock (almacen.Cerrojo)
+        {
+            int id = almacen.TiposDeAuditoria.Count == 0 ? 1 : almacen.TiposDeAuditoria.Max(t => t.IdTipoDeAuditoria) + 1;
+            almacen.TiposDeAuditoria.Add(new TIPO_DE_AUDITORIA { IdTipoDeAuditoria = id, Codigo = tipoDeAuditoria.Codigo, Descripcion = tipoDeAuditoria.Descripcion });
+            return id;
+        }
+    }
+
+    public void Actualizar(TIPO_DE_AUDITORIA tipoDeAuditoria)
+    {
+        lock (almacen.Cerrojo)
+        {
+            TIPO_DE_AUDITORIA t = almacen.TiposDeAuditoria.First(x => x.IdTipoDeAuditoria == tipoDeAuditoria.IdTipoDeAuditoria);
+            t.Codigo = tipoDeAuditoria.Codigo;
+            t.Descripcion = tipoDeAuditoria.Descripcion;
+        }
+    }
+
+    public void MarcarBorrado(int idTipoDeAuditoria)
+    {
+        lock (almacen.Cerrojo)
+            almacen.TiposDeAuditoria.First(x => x.IdTipoDeAuditoria == idTipoDeAuditoria).Borrado = true;
+    }
+
+    public UsoDeTipoDeAuditoria ObtenerUso(int idTipoDeAuditoria)
+    {
+        lock (almacen.Cerrojo)
+            return new UsoDeTipoDeAuditoria(
+                almacen.ProcesosAsociados.Count(pa => pa.IdTipoDeAuditoria == idTipoDeAuditoria),
+                almacen.Usuarios.Count(u => u.IdTipoDeAuditoria == idTipoDeAuditoria));
+    }
+
+    private static TIPO_DE_AUDITORIA Copiar(TIPO_DE_AUDITORIA t) => new()
+    {
+        IdTipoDeAuditoria = t.IdTipoDeAuditoria, Codigo = t.Codigo, Descripcion = t.Descripcion, Borrado = t.Borrado
+    };
+}
+
 public sealed class RepositorioUsuariosMemoria(AlmacenMemoria almacen) : IRepositorioUsuarios
 {
     public List<USUARIO> ObtenerPorUid(string uid)
@@ -605,7 +734,7 @@ public sealed class RepositorioUsuariosMemoria(AlmacenMemoria almacen) : IReposi
                 .Select(u => new USUARIO
                 {
                     IdUsuario = u.IdUsuario, Nombre = u.Nombre, Apellidos = u.Apellidos, UID = u.UID,
-                    IdPerfilDeUsuario = u.IdPerfilDeUsuario, IdSociedad = u.IdSociedad, Borrado = u.Borrado,
+                    IdPerfilDeUsuario = u.IdPerfilDeUsuario, IdSociedad = u.IdSociedad, IdTipoDeAuditoria = u.IdTipoDeAuditoria, Borrado = u.Borrado,
                     PERFIL_DE_USUARIO = almacen.Perfiles.FirstOrDefault(p => p.IdPerfilDeUsuario == u.IdPerfilDeUsuario)
                 })
                 .ToList();

@@ -511,6 +511,127 @@ public sealed class RepositorioSociedadesSql(IFabricaConexiones fabrica) : IRepo
     };
 }
 
+public sealed class RepositorioTiposDeAuditoriaSql(IFabricaConexiones fabrica) : IRepositorioTiposDeAuditoria
+{
+    // Codigo es char(2) en la base de datos: se devuelve sin espacios de relleno.
+    private const string Columnas = "t.IdTipoDeAuditoria, RTRIM(t.Codigo) AS Codigo, t.Descripcion, t.Borrado";
+    private const string Desde = " FROM TIPO_DE_AUDITORIA t";
+
+    private static readonly Dictionary<string, string> ColumnaDeOrden = new()
+    {
+        [CamposOrdenTipoDeAuditoria.IdTipoDeAuditoria] = "t.IdTipoDeAuditoria",
+        [CamposOrdenTipoDeAuditoria.Codigo] = "t.Codigo",
+        [CamposOrdenTipoDeAuditoria.Descripcion] = "t.Descripcion"
+    };
+
+    public List<TIPO_DE_AUDITORIA> ObtenerFiltrados(FiltroTIPO_DE_AUDITORIA? filtro, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales)
+    {
+        List<(string, object?)> parametros = [];
+        string donde = " WHERE t.Borrado = 0";
+        if (filtro != null)
+        {
+            if (!string.IsNullOrEmpty(filtro.Codigo))
+            {
+                donde += " AND t.Codigo LIKE @Codigo ESCAPE '~'";
+                parametros.Add(("@Codigo", ExtensionesDb.PatronContiene(filtro.Codigo)));
+            }
+            if (!string.IsNullOrEmpty(filtro.Descripcion))
+            {
+                donde += " AND t.Descripcion LIKE @Descripcion ESCAPE '~'";
+                parametros.Add(("@Descripcion", ExtensionesDb.PatronContiene(filtro.Descripcion)));
+            }
+        }
+
+        List<CriterioOrden> criterios = OrdenGrid.Interpretar(orden, CamposOrdenTipoDeAuditoria.Todos);
+        if (criterios.Count == 0)
+            throw new ArgumentException("No se ha indicado el orden del listado.");
+        string ordenSql = string.Join(", ", criterios.Select(c => ColumnaDeOrden[c.Campo] + (c.Descendente ? " DESC" : " ASC")));
+
+        using DbConnection conexion = fabrica.Abrir();
+        using (DbCommand contar = conexion.Comando("SELECT COUNT(*)" + Desde + donde, [.. parametros]))
+        {
+            numeroElementosTotales = Convert.ToInt32(contar.ExecuteScalar());
+        }
+
+        List<(string, object?)> parametrosPagina = [.. parametros,
+            ("@Saltar", numeroElementosPorPagina * (numeroPagina - 1)),
+            ("@Tomar", numeroElementosPorPagina)];
+        string sql = "SELECT " + Columnas + Desde + donde + " ORDER BY " + ordenSql +
+                     " OFFSET @Saltar ROWS FETCH NEXT @Tomar ROWS ONLY";
+
+        List<TIPO_DE_AUDITORIA> tipos = [];
+        using DbCommand consulta = conexion.Comando(sql, [.. parametrosPagina]);
+        using DbDataReader lector = consulta.ExecuteReader();
+        while (lector.Read()) tipos.Add(Leer(lector));
+        return tipos;
+    }
+
+    public TIPO_DE_AUDITORIA? ObtenerPorId(int idTipoDeAuditoria)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT " + Columnas + Desde + " WHERE t.IdTipoDeAuditoria = @Id AND t.Borrado = 0", ("@Id", idTipoDeAuditoria));
+        using DbDataReader lector = consulta.ExecuteReader();
+        return lector.Read() ? Leer(lector) : null;
+    }
+
+    public int ContarConMismoCodigo(string? codigo, int idTipoDeAuditoriaExcluido)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT COUNT(*) FROM TIPO_DE_AUDITORIA WHERE Codigo = @Codigo AND IdTipoDeAuditoria <> @Id AND Borrado = 0",
+            ("@Codigo", codigo), ("@Id", idTipoDeAuditoriaExcluido));
+        return Convert.ToInt32(consulta.ExecuteScalar());
+    }
+
+    public int Insertar(TIPO_DE_AUDITORIA tipoDeAuditoria)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand comando = conexion.Comando(
+            "INSERT INTO TIPO_DE_AUDITORIA (Codigo, Descripcion, Borrado) VALUES (@Codigo, @Descripcion, 0); " +
+            "SELECT CAST(SCOPE_IDENTITY() AS int);",
+            ("@Codigo", tipoDeAuditoria.Codigo), ("@Descripcion", tipoDeAuditoria.Descripcion));
+        return Convert.ToInt32(comando.ExecuteScalar());
+    }
+
+    public void Actualizar(TIPO_DE_AUDITORIA tipoDeAuditoria)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand comando = conexion.Comando(
+            "UPDATE TIPO_DE_AUDITORIA SET Codigo = @Codigo, Descripcion = @Descripcion WHERE IdTipoDeAuditoria = @Id",
+            ("@Codigo", tipoDeAuditoria.Codigo), ("@Descripcion", tipoDeAuditoria.Descripcion), ("@Id", tipoDeAuditoria.IdTipoDeAuditoria));
+        comando.ExecuteNonQuery();
+    }
+
+    public void MarcarBorrado(int idTipoDeAuditoria)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand comando = conexion.Comando(
+            "UPDATE TIPO_DE_AUDITORIA SET Borrado = 1 WHERE IdTipoDeAuditoria = @Id", ("@Id", idTipoDeAuditoria));
+        comando.ExecuteNonQuery();
+    }
+
+    public UsoDeTipoDeAuditoria ObtenerUso(int idTipoDeAuditoria)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT (SELECT COUNT(*) FROM PROCESO_ASOCIADO WHERE IdTipoDeAuditoria = @Id), " +
+            "(SELECT COUNT(*) FROM USUARIO WHERE IdTipoDeAuditoria = @Id)",
+            ("@Id", idTipoDeAuditoria));
+        using DbDataReader lector = consulta.ExecuteReader();
+        lector.Read();
+        return new UsoDeTipoDeAuditoria(lector.GetInt32(0), lector.GetInt32(1));
+    }
+
+    private static TIPO_DE_AUDITORIA Leer(DbDataReader lector) => new()
+    {
+        IdTipoDeAuditoria = lector.GetInt32(0),
+        Codigo = lector.IsDBNull(1) ? null : lector.GetString(1),
+        Descripcion = lector.IsDBNull(2) ? null : lector.GetString(2),
+        Borrado = lector.GetBoolean(3)
+    };
+}
+
 public sealed class RepositorioUsuariosSql(IFabricaConexiones fabrica) : IRepositorioUsuarios
 {
     public List<USUARIO> ObtenerPorUid(string uid)
@@ -518,7 +639,7 @@ public sealed class RepositorioUsuariosSql(IFabricaConexiones fabrica) : IReposi
         List<USUARIO> usuarios = [];
         using DbConnection conexion = fabrica.Abrir();
         using DbCommand consulta = conexion.Comando(
-            "SELECT u.IdUsuario, u.Nombre, u.Apellidos, u.UID, u.IdPerfilDeUsuario, u.Borrado, pf.Nombre AS PerfilNombre, u.IdSociedad " +
+            "SELECT u.IdUsuario, u.Nombre, u.Apellidos, u.UID, u.IdPerfilDeUsuario, u.Borrado, pf.Nombre AS PerfilNombre, u.IdSociedad, u.IdTipoDeAuditoria " +
             "FROM USUARIO u INNER JOIN PERFIL_DE_USUARIO pf ON pf.IdPerfilDeUsuario = u.IdPerfilDeUsuario " +
             "WHERE u.UID = @Uid AND u.Borrado = 0",
             ("@Uid", uid));
@@ -534,6 +655,7 @@ public sealed class RepositorioUsuariosSql(IFabricaConexiones fabrica) : IReposi
                 IdPerfilDeUsuario = lector.GetInt32(4),
                 Borrado = lector.GetBoolean(5),
                 IdSociedad = lector.IsDBNull(7) ? null : lector.GetInt32(7),
+                IdTipoDeAuditoria = lector.IsDBNull(8) ? null : lector.GetInt32(8),
                 PERFIL_DE_USUARIO = new PERFIL_DE_USUARIO { IdPerfilDeUsuario = lector.GetInt32(4), Nombre = lector.GetString(6) }
             });
         }

@@ -1,0 +1,30 @@
+@page "/Administracion/TipoDeAuditoria.aspx"
+@model eVidencia.Web.Pages.Administracion.TipoDeAuditoriaModel
+@*
+    Alta y edición de un Tipo de Auditoría.
+    Funcionalidad: eVidencias.Web/Administracion/TipoDeAuditoria.aspx.
+    Diseño: el de la ficha de Proceso del mockup "eVidencia · Mockup responsive".
+*@
+<section class="ev-screen ev-page" data-screen-label="Tipo de Auditoría">
+  <h1 class="ev-page-title">Tipo de Auditoría@(Model.Accion == Accion.Crear ? " (alta)" : "")</h1>
+  <form method="post" id="formTipoDeAuditoria" novalidate>
+    <input type="hidden" name="hdnAccion" value="@Model.Accion" />
+    <input type="hidden" name="hdnIdTipoDeAuditoria" value="@Model.IdTipoDeAuditoria" />
+    <div class="ev-card">
+      <div class="ev-form-grid">
+        <div class="ev-field @(Model.ErrorEnCodigo ? "has-error" : "")">
+          <label class="ev-label" for="txtCodigo">Código</label>
+          <div class="ev-inline"><input class="ev-input" name="txtCodigo" id="txtCodigo" maxlength="2" value="@Model.Codigo" autocomplete="off" /></div>
+        </div>
+        <div class="ev-field @(Model.ErrorEnDescripcion ? "has-error" : "")">
+          <label class="ev-label" for="txtDescripcion">Descripción</label>
+          <div class="ev-inline"><input class="ev-input" name="txtDescripcion" id="txtDescripcion" value="@Model.Descripcion" autocomplete="off" /></div>
+        </div>
+      </div>
+    </div>
+    <div class="ev-actions" style="margin-top:16px">
+      <button type="submit" class="ev-btn ev-btn--primary" id="btnGuardar">Guardar</button>
+      <a class="ev-btn ev-btn--ghost" id="btnVolver" href="/Administracion/TiposDeAuditoria.aspx">Volver</a>
+    </div>
+  </form>
+</section>

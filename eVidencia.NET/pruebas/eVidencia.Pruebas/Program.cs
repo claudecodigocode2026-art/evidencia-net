@@ -408,6 +408,128 @@ Console.WriteLine("Sociedades: permisos por perfil (GestorSociedades.AccionesPer
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Tipos de Auditoría (GestorTiposDeAuditoria). Datos de ejemplo: 6 tipos, el 5 borrado.
+//   1: con procesos asignados · 2: tipo del usuario de la demo · 3: solo un proceso asignado borrado
+//   4: sin uso · 6: tipo de un usuario dado de baja
+// ---------------------------------------------------------------------------------------------
+(GestorTiposDeAuditoria gta, AlmacenMemoria almacen) CrearTip(int? perfil = null)
+{
+    AlmacenMemoria almacen = AlmacenMemoria.DeEjemplo();
+    if (perfil != null) almacen.Usuarios[0].IdPerfilDeUsuario = perfil.Value;
+    var gu = new GestorUsuarios(new RepositorioUsuariosMemoria(almacen), new UsuarioFijo(DatosDeEjemplo.UidUsuarioDemo));
+    var gl = new GestorLogDeEntidades(new RepositorioLogDeEntidadesMemoria(almacen), gu);
+    return (new GestorTiposDeAuditoria(new RepositorioTiposDeAuditoriaMemoria(almacen), gu, gl), almacen);
+}
+
+Console.WriteLine();
+Console.WriteLine("Tipos de Auditoría: listado (GestorTiposDeAuditoria.ConsultarTipoAuditoriaConFiltro)");
+{
+    var (gta, _) = CrearTip();
+    var p1 = gta.ConsultarTipoAuditoriaConFiltro(null, "Codigo asc", 1, 20, out int total);
+    Comprobar("no incluye los tipos borrados (5 de 6)", total == 5 && p1.All(t => t.IdTipoDeAuditoria != 5));
+    Comprobar("orden inicial por Código ascendente", p1[0].Codigo == "E1" && p1[4].Codigo == "E6");
+    gta.ConsultarTipoAuditoriaConFiltro(new FiltroTIPO_DE_AUDITORIA { Codigo = "e3" }, "Codigo asc", 1, 20, out int t1);
+    Comprobar("filtro Código: contiene el texto, sin distinguir mayúsculas", t1 == 1);
+    gta.ConsultarTipoAuditoriaConFiltro(new FiltroTIPO_DE_AUDITORIA { Descripcion = "revisión" }, "Codigo asc", 1, 20, out int t2);
+    Comprobar("filtro Descripción: contiene el texto", t2 == 2);
+    gta.ConsultarTipoAuditoriaConFiltro(new FiltroTIPO_DE_AUDITORIA { Codigo = "E1", Descripcion = "revisión" }, "Codigo asc", 1, 20, out int t3);
+    Comprobar("los filtros se combinan con Y", t3 == 0);
+    var porDesc = gta.ConsultarTipoAuditoriaConFiltro(null, "Descripcion desc", 1, 20, out _);
+    Comprobar("orden por la columna Descripción", porDesc[0].Codigo == "E4" && porDesc[4].Codigo == "E1");
+    var pag2 = gta.ConsultarTipoAuditoriaConFiltro(null, "Codigo asc", 2, 3, out _);
+    Comprobar("paginación: página 2 de 3 filas con las 2 restantes", pag2.Count == 2 && pag2[0].Codigo == "E4");
+    Comprobar("campo de orden no permitido se rechaza", Captura<ArgumentException>(() => gta.ConsultarTipoAuditoriaConFiltro(null, "Borrado asc", 1, 20, out _)) != null);
+}
+
+Console.WriteLine();
+Console.WriteLine("Tipos de Auditoría: alta (GestorTiposDeAuditoria.CrearTipoDeAuditoria)");
+{
+    var (gta, almacen) = CrearTip();
+    int id = gta.CrearTipoDeAuditoria(new TIPO_DE_AUDITORIA { Codigo = "N1", Descripcion = "Tipo nuevo" });
+    TIPO_DE_AUDITORIA creado = gta.ConsultarTipoDeAuditoria(id);
+    Comprobar("crea el tipo con sus datos", creado.Codigo == "N1" && creado.Descripcion == "Tipo nuevo" && !creado.Borrado);
+    string esperado = "Se ha creado el Tipo de Auditoría con el codigo: N1" + NL +
+                      "\n *[Campo Código:]* Valor nuevo: N1 " + NL +
+                      "\n *[Campo Descripción:]* Valor nuevo: Tipo nuevo ";
+    Comprobar("texto de auditoría del alta igual al formato del original", almacen.Logs.Count == 1 && almacen.Logs[0].Descripcion == esperado && almacen.Logs[0].IdTipoDeAccion == 1);
+    Comprobar("la línea de auditoría no queda relacionada con ninguna entidad (como el original)",
+        almacen.Logs[0].IdSociedad == null && almacen.Logs[0].IdProceso == null && almacen.Logs[0].IdSubproceso == null);
+    Comprobar("[DM-11] rechaza un código que ya existe: 'Ya existe otro tipo de auditoría con este mismo código'",
+        Captura<ApplicationException>(() => gta.CrearTipoDeAuditoria(new TIPO_DE_AUDITORIA { Codigo = "E1", Descripcion = "Repetido" }))?.Message == "Ya existe otro tipo de auditoría con este mismo código");
+    Comprobar("[DM-11] el rechazo no distingue mayúsculas", Captura<ApplicationException>(() => gta.CrearTipoDeAuditoria(new TIPO_DE_AUDITORIA { Codigo = "e2", Descripcion = "Repetido" })) != null);
+    Comprobar("el código de un tipo borrado se puede reutilizar", Captura<Exception>(() => gta.CrearTipoDeAuditoria(new TIPO_DE_AUDITORIA { Codigo = "E5", Descripcion = "Reutiliza código" })) == null);
+}
+
+Console.WriteLine();
+Console.WriteLine("Tipos de Auditoría: edición (GestorTiposDeAuditoria.ActualizarTipoDeAuditoria)");
+{
+    var (gta, almacen) = CrearTip();
+    TIPO_DE_AUDITORIA t = gta.ConsultarTipoDeAuditoria(4);
+    t.Descripcion = "Revisión interna (modificada)";
+    gta.ActualizarTipoDeAuditoria(t);
+    TIPO_DE_AUDITORIA leido = gta.ConsultarTipoDeAuditoria(4);
+    Comprobar("guarda la descripción y conserva el código", leido.Descripcion == "Revisión interna (modificada)" && leido.Codigo == "E4");
+    string esperado = "Se ha modificado el Tipo de Auditoría con el codigo: E4" + NL +
+                      "\n *[Campo Descripción:]* Valor antiguo: Revisión interna (ejemplo) - Valor nuevo: Revisión interna (modificada) ";
+    Comprobar("auditoría: solo los campos cambiados, con valor antiguo y nuevo", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 3 && almacen.Logs[0].Descripcion == esperado);
+    t.Codigo = "E1";
+    Comprobar("[DM-11] rechaza cambiar a un código que ya usa otro tipo", Captura<ApplicationException>(() => gta.ActualizarTipoDeAuditoria(t))?.Message == "Ya existe otro tipo de auditoría con este mismo código");
+    t.Codigo = "E4";
+    Comprobar("permite guardar manteniendo su propio código", Captura<Exception>(() => gta.ActualizarTipoDeAuditoria(t)) == null);
+    Comprobar("consultar un tipo inexistente: 'No existe el tipo de auditoría'", Captura<ApplicationException>(() => gta.ConsultarTipoDeAuditoria(9999))?.Message == "No existe el tipo de auditoría");
+    Comprobar("actualizar un tipo inexistente: 'No existe el tipo de auditoria' (sin tilde, como el original)",
+        Captura<ApplicationException>(() => gta.ActualizarTipoDeAuditoria(new TIPO_DE_AUDITORIA { IdTipoDeAuditoria = 9999, Codigo = "ZZ", Descripcion = "x" }))?.Message == "No existe el tipo de auditoria");
+}
+
+Console.WriteLine();
+Console.WriteLine("Tipos de Auditoría: baja (GestorTiposDeAuditoria.EliminarTipoDeAuditoria)");
+{
+    var (gta, almacen) = CrearTip();
+    Comprobar("[DM-11] no elimina un tipo con procesos asignados: 'El tipo de auditorías tiene procesos asociados'",
+        Captura<ApplicationException>(() => gta.EliminarTipoDeAuditoria(1))?.Message == "El tipo de auditorías tiene procesos asociados");
+    Comprobar("[DM-11] tampoco si su único proceso asignado está borrado (como el original)",
+        Captura<ApplicationException>(() => gta.EliminarTipoDeAuditoria(3))?.Message == "El tipo de auditorías tiene procesos asociados");
+    Comprobar("[DM-11] no elimina el tipo de un usuario: 'El tipo de auditorías tiene usuarios asociados'",
+        Captura<ApplicationException>(() => gta.EliminarTipoDeAuditoria(2))?.Message == "El tipo de auditorías tiene usuarios asociados");
+    Comprobar("[DM-11] tampoco si ese usuario está dado de baja (como el original)",
+        Captura<ApplicationException>(() => gta.EliminarTipoDeAuditoria(6))?.Message == "El tipo de auditorías tiene usuarios asociados");
+    Comprobar("[DM-11] los rechazos no borran ni dejan auditoría", almacen.TiposDeAuditoria.Count(x => x.Borrado) == 1 && almacen.Logs.Count == 0);
+    Comprobar("sí elimina un tipo sin uso", Captura<Exception>(() => gta.EliminarTipoDeAuditoria(4)) == null);
+    Comprobar("baja lógica: el registro sigue en la tabla, marcado como borrado", almacen.TiposDeAuditoria.Single(x => x.IdTipoDeAuditoria == 4).Borrado);
+    Comprobar("auditoría de la baja", almacen.Logs.Count == 1 && almacen.Logs[0].IdTipoDeAccion == 2
+        && almacen.Logs[0].Descripcion == "Se ha eliminado el Tipo de Auditoría con el codigo: E4");
+    gta.ConsultarTipoAuditoriaConFiltro(null, "Codigo asc", 1, 20, out int total);
+    Comprobar("el listado deja de mostrarlo", total == 4);
+    Comprobar("eliminar dos veces: 'No existe el tipo de auditoría'", Captura<ApplicationException>(() => gta.EliminarTipoDeAuditoria(4))?.Message == "No existe el tipo de auditoría");
+}
+
+Console.WriteLine();
+Console.WriteLine("Tipos de Auditoría: permisos por perfil (GestorTiposDeAuditoria.AccionesPermitidas)");
+{
+    string sinPermiso = "El usuario demo.admin no tiene permisos para realizar esta acción.";
+    var (gtaAdmin, _) = CrearTip();
+    Comprobar("Administrador: consultar, crear, actualizar y eliminar", gtaAdmin.AccionesPermitidas().Count == 4);
+    foreach (PerfilDeUsuario perfil in new[] { PerfilDeUsuario.Auditor, PerfilDeUsuario.ResponsableDeAuditoria, PerfilDeUsuario.ResponsableEmpresa, PerfilDeUsuario.AdministradorPais })
+    {
+        var (gta, _) = CrearTip((int)perfil);
+        bool soloConsulta = gta.AccionesPermitidas().SequenceEqual([GestorTiposDeAuditoria.AccionTiposDeAuditoria.ConsultarTipoDeAuditoria]);
+        TIPO_DE_AUDITORIA t = gta.ConsultarTipoDeAuditoria(4);
+        bool sinAlta = Captura<SecurityException>(() => gta.CrearTipoDeAuditoria(new TIPO_DE_AUDITORIA { Codigo = "XX", Descripcion = "X" }))?.Message == sinPermiso;
+        bool sinEdicion = Captura<SecurityException>(() => gta.ActualizarTipoDeAuditoria(t))?.Message == sinPermiso;
+        bool sinBaja = Captura<SecurityException>(() => gta.EliminarTipoDeAuditoria(4))?.Message == sinPermiso;
+        Comprobar($"{perfil}: solo consulta; alta, edición y baja rechazadas", soloConsulta && sinAlta && sinEdicion && sinBaja);
+    }
+    foreach (PerfilDeUsuario perfil in new[] { PerfilDeUsuario.AuditorExterno, PerfilDeUsuario.ResponsableControl, PerfilDeUsuario.ResponsableSeguimientoArea })
+    {
+        var (gta, _) = CrearTip((int)perfil);
+        bool nada = gta.AccionesPermitidas().Count == 0;
+        bool sinListado = Captura<SecurityException>(() => gta.ConsultarTipoAuditoriaConFiltro(null, "Codigo asc", 1, 20, out _))?.Message == sinPermiso;
+        bool sinFicha = Captura<SecurityException>(() => gta.ConsultarTipoDeAuditoria(4))?.Message == sinPermiso;
+        Comprobar($"{perfil}: ni siquiera puede consultar", nada && sinListado && sinFicha);
+    }
+}
+
 // Comprobaciones opcionales sobre un libro Excel de datos: dotnet run --project pruebas/eVidencia.Pruebas -- <ruta.xlsx>
 if (args.Length > 0 && File.Exists(args[0]))
 {

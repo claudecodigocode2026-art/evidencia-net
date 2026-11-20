@@ -37,6 +37,15 @@ public class PROCESO_ASOCIADO
     public int IdProceso { get; set; }
     public int? IdSubproceso { get; set; }
     public int IdSociedad { get; set; }
+    public int IdTipoDeAuditoria { get; set; }
+    public bool Borrado { get; set; }
+}
+
+public class TIPO_DE_AUDITORIA
+{
+    public int IdTipoDeAuditoria { get; set; }
+    public string? Codigo { get; set; }
+    public string? Descripcion { get; set; }
     public bool Borrado { get; set; }
 }
 
@@ -85,6 +94,7 @@ public class USUARIO
     public string? UID { get; set; }
     public int IdPerfilDeUsuario { get; set; }
     public int? IdSociedad { get; set; }
+    public int? IdTipoDeAuditoria { get; set; }
     public bool Borrado { get; set; }
     public PERFIL_DE_USUARIO? PERFIL_DE_USUARIO { get; set; }
 }

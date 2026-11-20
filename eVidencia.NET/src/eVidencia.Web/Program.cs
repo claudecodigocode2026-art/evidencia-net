@@ -46,6 +46,7 @@ if (modoDatos.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddScoped<IRepositorioProcesos, RepositorioProcesosSql>();
     builder.Services.AddScoped<IRepositorioSubprocesos, RepositorioSubprocesosSql>();
     builder.Services.AddScoped<IRepositorioSociedades, RepositorioSociedadesSql>();
+    builder.Services.AddScoped<IRepositorioTiposDeAuditoria, RepositorioTiposDeAuditoriaSql>();
     builder.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosSql>();
     builder.Services.AddScoped<IRepositorioLogDeEntidades, RepositorioLogDeEntidadesSql>();
     builder.Services.AddSingleton(new InfoDemo(usuarioFijo, "SQL Server"));
@@ -70,7 +71,7 @@ else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDa
             almacen = AlmacenMemoria.DesdeExcel(ruta);
             descripcion = almacen.Origen + " (los cambios no se guardan en el libro)";
             if (almacen.SociedadesDeEjemplo)
-                descripcion += " · Sociedades y países de ejemplo: el libro no incluye esas hojas";
+                descripcion += " · Sociedades, países y tipos de auditoría de ejemplo: el libro no incluye esas hojas";
         }
         else
         {
@@ -99,6 +100,7 @@ else if (modoDatos.Equals("Excel", StringComparison.OrdinalIgnoreCase) || modoDa
     builder.Services.AddScoped<IRepositorioProcesos, RepositorioProcesosMemoria>();
     builder.Services.AddScoped<IRepositorioSubprocesos, RepositorioSubprocesosMemoria>();
     builder.Services.AddScoped<IRepositorioSociedades, RepositorioSociedadesMemoria>();
+    builder.Services.AddScoped<IRepositorioTiposDeAuditoria, RepositorioTiposDeAuditoriaMemoria>();
     builder.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuariosMemoria>();
     builder.Services.AddScoped<IRepositorioLogDeEntidades, RepositorioLogDeEntidadesMemoria>();
     builder.Services.AddSingleton(new InfoDemo(usuarioFijo, descripcion));
@@ -118,6 +120,7 @@ builder.Services.AddScoped<GestorSubprocesos>();
 builder.Services.AddScoped<GestorProcesos>();
 builder.Services.AddScoped<GestorDatosMaestros>();
 builder.Services.AddScoped<GestorSociedades>();
+builder.Services.AddScoped<GestorTiposDeAuditoria>();
 
 var app = builder.Build();
 
@@ -229,6 +232,32 @@ app.MapPost("/Administracion/AdministracionService.asmx/ConsultarGridSociedades"
     }).ToList();
 
     var respuesta = RespuestaGrid<object>.Crear(page, rows, numeroElementosTotales, listaDeSociedades.Cast<object>().ToList());
+    return Results.Text(JsonSerializer.Serialize(respuesta, opcionesJson), "application/json");
+});
+
+// ---------------------------------------------------------------------------------------------
+// Servicio del listado de Tipos de Auditoría.
+// Origen: eVidencias.Web/Administracion/AdministracionService.asmx.cs:305-320 (ConsultarGridTiposDeAuditoria).
+// ---------------------------------------------------------------------------------------------
+app.MapPost("/Administracion/AdministracionService.asmx/ConsultarGridTiposDeAuditoria", async (HttpContext http, GestorTiposDeAuditoria gestorTiposDeAuditoria) =>
+{
+    IFormCollection form = await http.Request.ReadFormAsync();
+    int page = int.TryParse(form["page"], out int p) ? p : -1;
+    int rows = int.TryParse(form["rows"], out int r) ? r : -1;
+    string orden = form["sidx"].ToString() + " " + form["sord"].ToString();
+    string filtro = form["filtro"].ToString();
+
+    FiltroTIPO_DE_AUDITORIA? filtroTipoDeAuditoria = string.IsNullOrWhiteSpace(filtro) ? null : JsonSerializer.Deserialize<FiltroTIPO_DE_AUDITORIA>(filtro, opcionesFiltro);
+
+    List<TIPO_DE_AUDITORIA> tipos = gestorTiposDeAuditoria.ConsultarTipoAuditoriaConFiltro(filtroTipoDeAuditoria, orden, page, rows, out int numeroElementosTotales);
+    var listaDeTipos = tipos.Select(t => new
+    {
+        t.IdTipoDeAuditoria,
+        Codigo = WebUtility.HtmlEncode(t.Codigo),
+        Descripcion = WebUtility.HtmlEncode(t.Descripcion)
+    }).ToList();
+
+    var respuesta = RespuestaGrid<object>.Crear(page, rows, numeroElementosTotales, listaDeTipos.Cast<object>().ToList());
     return Results.Text(JsonSerializer.Serialize(respuesta, opcionesJson), "application/json");
 });
 

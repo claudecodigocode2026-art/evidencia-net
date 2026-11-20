@@ -135,6 +135,53 @@ public class GestorLogDeEntidades(IRepositorioLogDeEntidades logs, GestorUsuario
         LogDeEntidad(accion, descripcion, idProceso: null, idSubproceso: null, idSociedad: sociedadDeReferencia.IdSociedad);
     }
 
+    /// <summary>Origen: LogDeTipoAuditoria (línea 808). No relaciona la línea de auditoría con ninguna entidad.</summary>
+    public void LogDeTipoAuditoria(TipoDeAccionLog accion, TIPO_DE_AUDITORIA? antiguo = null, TIPO_DE_AUDITORIA? nuevo = null)
+    {
+        _listaDeCambiosLog = [];
+
+        TIPO_DE_AUDITORIA tipoAuditoriaDeReferencia = accion switch
+        {
+            TipoDeAccionLog.Modificacion or TipoDeAccionLog.Baja => antiguo!,
+            _ => nuevo!
+        };
+
+        string descripcion;
+        switch (accion)
+        {
+            case TipoDeAccionLog.Alta:
+                GenerarListaDeCambiosEnTipoAuditoria(antiguo, nuevo!);
+                descripcion = string.Format("Se ha creado el Tipo de Auditoría con el codigo: {0}", tipoAuditoriaDeReferencia.Codigo);
+                descripcion = descripcion + Environment.NewLine + string.Join(Environment.NewLine, _listaDeCambiosLog);
+                break;
+
+            case TipoDeAccionLog.Modificacion:
+                GenerarListaDeCambiosEnTipoAuditoria(antiguo, nuevo!);
+                descripcion = string.Format("Se ha modificado el Tipo de Auditoría con el codigo: {0}", tipoAuditoriaDeReferencia.Codigo);
+                descripcion = descripcion + Environment.NewLine + string.Join(Environment.NewLine, _listaDeCambiosLog);
+                break;
+
+            case TipoDeAccionLog.Baja:
+                descripcion = string.Format("Se ha eliminado el Tipo de Auditoría con el codigo: {0}", tipoAuditoriaDeReferencia.Codigo);
+                break;
+
+            default:
+                descripcion = "";
+                break;
+        }
+
+        LogDeEntidad(accion, descripcion, idProceso: null, idSubproceso: null);
+    }
+
+    /// <summary>Origen: GenerarListaDeCambiosEnTipoAuditoria (línea 1405).</summary>
+    private void GenerarListaDeCambiosEnTipoAuditoria(TIPO_DE_AUDITORIA? antiguo, TIPO_DE_AUDITORIA nuevo)
+    {
+        antiguo ??= new TIPO_DE_AUDITORIA();
+
+        DescribirCambio("Código", antiguo.Codigo, nuevo.Codigo);
+        DescribirCambio("Descripción", antiguo.Descripcion, nuevo.Descripcion);
+    }
+
     /// <summary>Origen: LogDeEntidad (línea 449).</summary>
     private void LogDeEntidad(TipoDeAccionLog accion, string descripcion, int? idProceso, int? idSubproceso, int? idSociedad = null)
     {

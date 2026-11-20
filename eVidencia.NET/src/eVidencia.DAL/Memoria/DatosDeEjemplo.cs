@@ -36,9 +36,23 @@ public static class DatosDeEjemplo
 
     public static List<USUARIO> Usuarios() =>
     [
-        new() { IdUsuario = 1, Nombre = "Demo", Apellidos = "Usuario", UID = UidUsuarioDemo, IdPerfilDeUsuario = 1, IdSociedad = 2 },
+        new() { IdUsuario = 1, Nombre = "Demo", Apellidos = "Usuario", UID = UidUsuarioDemo, IdPerfilDeUsuario = 1, IdSociedad = 2, IdTipoDeAuditoria = 2 },
         // Usuario dado de baja: su sociedad (la 7) sigue sin poder eliminarse, como en el origen.
-        new() { IdUsuario = 2, Nombre = "Baja", Apellidos = "Usuario", UID = "demo.baja", IdPerfilDeUsuario = 6, IdSociedad = 7, Borrado = true },
+        new() { IdUsuario = 2, Nombre = "Baja", Apellidos = "Usuario", UID = "demo.baja", IdPerfilDeUsuario = 6, IdSociedad = 7, IdTipoDeAuditoria = 6, Borrado = true },
+    ];
+
+    /// <summary>
+    /// Tipos de auditoría inventados. El 1 tiene procesos asignados; el 2 es el del usuario de la demo;
+    /// el 3 solo tiene un proceso asignado borrado; el 4 no se usa; el 5 está borrado; el 6 es el de un usuario borrado.
+    /// </summary>
+    public static List<TIPO_DE_AUDITORIA> TiposDeAuditoria() =>
+    [
+        new() { IdTipoDeAuditoria = 1, Codigo = "E1", Descripcion = "Auditoría de cuentas (ejemplo)" },
+        new() { IdTipoDeAuditoria = 2, Codigo = "E2", Descripcion = "Auditoría de procesos (ejemplo)" },
+        new() { IdTipoDeAuditoria = 3, Codigo = "E3", Descripcion = "Auditoría de sistemas (ejemplo)" },
+        new() { IdTipoDeAuditoria = 4, Codigo = "E4", Descripcion = "Revisión interna (ejemplo)" },
+        new() { IdTipoDeAuditoria = 5, Codigo = "E5", Descripcion = "Auditoría borrada (ejemplo)", Borrado = true },
+        new() { IdTipoDeAuditoria = 6, Codigo = "E6", Descripcion = "Revisión externa (ejemplo)" },
     ];
 
     public static List<PAIS> Paises() =>
@@ -128,8 +142,8 @@ public static class DatosDeEjemplo
     /// </summary>
     public static List<PROCESO_ASOCIADO> ProcesosAsociados() =>
     [
-        new() { IdProcesoAsociado = 1, IdProceso = 1, IdSubproceso = 101, IdSociedad = 1 },
-        new() { IdProcesoAsociado = 2, IdProceso = 9, IdSubproceso = null, IdSociedad = 1 },
-        new() { IdProcesoAsociado = 3, IdProceso = 2, IdSubproceso = 103, IdSociedad = 4, Borrado = true },
+        new() { IdProcesoAsociado = 1, IdProceso = 1, IdSubproceso = 101, IdSociedad = 1, IdTipoDeAuditoria = 1 },
+        new() { IdProcesoAsociado = 2, IdProceso = 9, IdSubproceso = null, IdSociedad = 1, IdTipoDeAuditoria = 1 },
+        new() { IdProcesoAsociado = 3, IdProceso = 2, IdSubproceso = 103, IdSociedad = 4, IdTipoDeAuditoria = 3, Borrado = true },
     ];
 }

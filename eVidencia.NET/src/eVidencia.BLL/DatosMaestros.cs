@@ -17,6 +17,12 @@ public static class DatosMaestros
     public const string SociedadesYaExisteSociedadMismoeSif = "Ya existe otra sociedad con este mismo código eSif.";
     public const string SociedadesTieneProcesosAsociados = "La sociedad tiene procesos asociados.";
     public const string SociedadesTieneUsuariosAsociados = "La sociedad tiene usuarios asociados";
+    public const string TipoAuditoriasNoExisteTipoAuditoria = "No existe el tipo de auditoría";
+    /// <summary>Texto distinto (sin tilde) que usa el original solo al actualizar (GestorTiposDeAuditoria.cs:106).</summary>
+    public const string TiposAuditoriaNoExisteTipoAuditoria = "No existe el tipo de auditoria";
+    public const string TipoAuditoriasYaExisteTipoAuditoriaMismoCodigo = "Ya existe otro tipo de auditoría con este mismo código";
+    public const string TipoAuditoriasTieneProcesosAsociados = "El tipo de auditorías tiene procesos asociados";
+    public const string TipoAuditoriasTieneUsuariosAsociados = "El tipo de auditorías tiene usuarios asociados";
     public const string TipoDeEmpresa_1 = "Auditora";
     public const string TipoDeEmpresa_2 = "Auditada";
     public const string TipoDeEmpresa_3 = "Ambas";
