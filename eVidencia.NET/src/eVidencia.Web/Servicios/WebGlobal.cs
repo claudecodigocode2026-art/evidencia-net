@@ -10,6 +10,15 @@ public static class WebGlobal
     public const string ProcesosCodigo = "Código";
     public const string ProcesosNombre = "Nombre";
     public const string ProcesosTipoProceso = "Tipo de Proceso";
+    public const string SubprocesosCodigo = "Código";
+    public const string SubprocesosNombre = "Nombre";
+    public const string SubprocesosProceso = "Proceso";
+    public const string SociedadesIdSociedad = "Identificador";
+    public const string SociedadesCodigoeSif = "Código eSif";
+    public const string SociedadesNombre = "Nombre";
+    public const string SociedadesTipoEmpresa = "Tipo de Empresa";
+    public const string SociedadesPais = "Pais";
+    public const string Todos = "[Todos]";
     public const string NoSeHaSeleccionadoNingunaFila = "No se ha seleccionado ninguna fila";
     public const string SeguroDeseaEliminar = "¿Esta seguro que desea eliminar el registro {0}? \\n";
     public const string btnFiltrar = "Filtrar";
@@ -21,5 +30,6 @@ public static class WebGlobal
     public const string TituloActualizacion = "Actualización";
     public const string Actualizacion = "Registro actualizado con éxito";
     public const string ErrorFormatoParametroIdProcesoNoValido = "Formato del parámetro IdProceso no válido";
+    public const string ErrorFormatoParametroIdSociedadNoValido = "Formato del parámetro IdSociedad no válido";
     public const string ErrorAccionNoReconocida = "Acción no reconocida";
 }

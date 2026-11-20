@@ -58,7 +58,7 @@ public class GestorLogDeEntidades(IRepositorioLogDeEntidades logs, GestorUsuario
         LogDeEntidad(accion, descripcion, idProceso: procesoDeReferencia.IdProceso, idSubproceso: null);
     }
 
-    /// <summary>Origen: LogDeSubproceso (línea 739). La demo solo usa el alta (subproceso "Otros").</summary>
+    /// <summary>Origen: LogDeSubproceso (línea 739).</summary>
     public void LogDeSubproceso(TipoDeAccionLog accion, SUBPROCESO? antiguo = null, SUBPROCESO? nuevo = null)
     {
         _listaDeCambiosLog = [];
@@ -96,8 +96,47 @@ public class GestorLogDeEntidades(IRepositorioLogDeEntidades logs, GestorUsuario
         LogDeEntidad(accion, descripcion, idProceso: subprocesoDeReferencia.IdProceso, idSubproceso: subprocesoDeReferencia.IdSubproceso);
     }
 
+    /// <summary>Origen: LogDeSociedad (línea 311).</summary>
+    public void LogDeSociedad(TipoDeAccionLog accion, SOCIEDAD? antiguo = null, SOCIEDAD? nuevo = null)
+    {
+        _listaDeCambiosLog = [];
+
+        SOCIEDAD sociedadDeReferencia = accion switch
+        {
+            TipoDeAccionLog.Modificacion or TipoDeAccionLog.Baja => antiguo!,
+            _ => nuevo!
+        };
+
+        string descripcion;
+        switch (accion)
+        {
+            case TipoDeAccionLog.Alta:
+                GenerarListaDeCambiosEnSociedad(antiguo, nuevo!);
+                descripcion = string.Format("Se ha creado la Sociedad: {0}", sociedadDeReferencia.Nombre);
+                descripcion = descripcion + Environment.NewLine + string.Join(Environment.NewLine, _listaDeCambiosLog);
+                break;
+
+            case TipoDeAccionLog.Modificacion:
+                GenerarListaDeCambiosEnSociedad(antiguo, nuevo!);
+                // Los dos espacios tras "modificado" y "eliminado" están en el texto del original.
+                descripcion = string.Format("Se ha modificado  la Sociedad con el nombre: {0}", sociedadDeReferencia.Nombre);
+                descripcion = descripcion + Environment.NewLine + string.Join(Environment.NewLine, _listaDeCambiosLog);
+                break;
+
+            case TipoDeAccionLog.Baja:
+                descripcion = string.Format("Se ha eliminado  la Sociedad con el nombre: {0}", sociedadDeReferencia.Nombre);
+                break;
+
+            default:
+                descripcion = "";
+                break;
+        }
+
+        LogDeEntidad(accion, descripcion, idProceso: null, idSubproceso: null, idSociedad: sociedadDeReferencia.IdSociedad);
+    }
+
     /// <summary>Origen: LogDeEntidad (línea 449).</summary>
-    private void LogDeEntidad(TipoDeAccionLog accion, string descripcion, int? idProceso, int? idSubproceso)
+    private void LogDeEntidad(TipoDeAccionLog accion, string descripcion, int? idProceso, int? idSubproceso, int? idSociedad = null)
     {
         USUARIO usuarioAutenticado = gestorUsuarios.ConsultarUsuarioAutenticado();
 
@@ -107,7 +146,7 @@ public class GestorLogDeEntidades(IRepositorioLogDeEntidades logs, GestorUsuario
             Descripcion = descripcion,
             Fecha = DateTime.Now,
             IdUsuario = usuarioAutenticado.IdUsuario,
-            IdSociedad = null,
+            IdSociedad = idSociedad,
             IdPeriodo = null,
             IdProceso = idProceso,
             IdPlanificadorDeEvidencias = null,
@@ -139,6 +178,19 @@ public class GestorLogDeEntidades(IRepositorioLogDeEntidades logs, GestorUsuario
         DescribirCambio("Proceso",
             antiguo.PROCESO == null ? "" : antiguo.PROCESO.Nombre,
             nuevo.PROCESO == null ? "" : nuevo.PROCESO.Nombre);
+    }
+
+    /// <summary>Origen: GenerarListaDeCambiosEnSociedad (línea 1477).</summary>
+    private void GenerarListaDeCambiosEnSociedad(SOCIEDAD? antiguo, SOCIEDAD nuevo)
+    {
+        antiguo ??= new SOCIEDAD();
+
+        DescribirCambio("CodigoEsif", antiguo.CodigoEsif, nuevo.CodigoEsif);
+        DescribirCambio("Nombre", antiguo.Nombre, nuevo.Nombre);
+        DescribirCambio("País", antiguo.PAIS == null ? "" : antiguo.PAIS.Nombre, nuevo.PAIS == null ? "" : nuevo.PAIS.Nombre);
+        DescribirCambio("Tipo de Empresa",
+            antiguo.TIPO_DE_EMPRESA == null ? "" : antiguo.TIPO_DE_EMPRESA.Nombre,
+            nuevo.TIPO_DE_EMPRESA == null ? "" : nuevo.TIPO_DE_EMPRESA.Nombre);
     }
 
     /// <summary>Origen: DescribirCambio (línea 1546).</summary>

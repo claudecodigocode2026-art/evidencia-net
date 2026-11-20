@@ -1,0 +1,42 @@
+@page "/Administracion/Subproceso.aspx"
+@model eVidencia.Web.Pages.Administracion.SubprocesoModel
+@*
+    Alta y edición de un Subproceso.
+    Funcionalidad: eVidencias.Web/Administracion/Subproceso.aspx.
+    Diseño: el de la ficha de Proceso del mockup "eVidencia · Mockup responsive".
+*@
+<section class="ev-screen ev-page" data-screen-label="Subproceso">
+  <h1 class="ev-page-title">Subproceso@(Model.Accion == Accion.Crear ? " (alta)" : "")</h1>
+  <form method="post" id="formSubproceso" novalidate>
+    <input type="hidden" name="hdnAccion" value="@Model.Accion" />
+    <input type="hidden" name="hdnIdSubproceso" value="@Model.IdSubproceso" />
+    <div class="ev-card">
+      <div class="ev-form-grid">
+        <div class="ev-field @(Model.ErrorEnCodigo ? "has-error" : "")">
+          <label class="ev-label" for="txtCodigo">Código</label>
+          <div class="ev-inline"><input class="ev-input" name="txtCodigo" id="txtCodigo" maxlength="10" value="@Model.Codigo" autocomplete="off" /></div>
+        </div>
+        <div class="ev-field @(Model.ErrorEnNombre ? "has-error" : "")">
+          <label class="ev-label" for="txtNombre">Nombre</label>
+          <div class="ev-inline"><input class="ev-input" name="txtNombre" id="txtNombre" value="@Model.Nombre" autocomplete="off" /></div>
+        </div>
+        <div class="ev-field @(Model.ErrorEnProceso ? "has-error" : "")">
+          <label class="ev-label" for="ddProceso">Proceso</label>
+          <div class="ev-inline">
+            <select class="ev-select" name="ddProceso" id="ddProceso">
+              <option value="-1" selected="@(Model.Proceso == "-1")"></option>
+              @foreach (var proceso in Model.Procesos)
+              {
+                <option value="@proceso.IdProceso" selected="@(Model.Proceso == proceso.IdProceso.ToString())">@proceso.Nombre</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev-actions" style="margin-top:16px">
+      <button type="submit" class="ev-btn ev-btn--primary" id="btnGuardar">Guardar</button>
+      <a class="ev-btn ev-btn--ghost" id="btnVolver" href="/Administracion/Subprocesos.aspx">Volver</a>
+    </div>
+  </form>
+</section>
