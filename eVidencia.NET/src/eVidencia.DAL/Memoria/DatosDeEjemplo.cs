@@ -69,6 +69,28 @@ public static class DatosDeEjemplo
         new() { IdProceso = 26, Codigo = "EJ-26", Nombre = "Controles a nivel de entidad (ejemplo)", IdTipoDeProceso = 14 },
     ];
 
-    /// <summary>Identificadores de proceso que tienen un PROCESO_ASOCIADO.</summary>
-    public static List<int> ProcesosConAsociado() => [1, 9];
+    /// <summary>
+    /// Subprocesos de ejemplo que no son de tipo "Otros". Los identificadores empiezan en 101 para no
+    /// coincidir con los subprocesos "Otros" (uno por proceso, identificadores 1 a 26).
+    /// </summary>
+    public static List<SUBPROCESO> Subprocesos() =>
+    [
+        new() { IdSubproceso = 101, Codigo = "EJ-01.1", Nombre = "Definición de objetivos (ejemplo)", IdProceso = 1 },
+        new() { IdSubproceso = 102, Codigo = "EJ-01.2", Nombre = "Seguimiento del plan (ejemplo)", IdProceso = 1 },
+        new() { IdSubproceso = 103, Codigo = "EJ-02.1", Nombre = "Elaboración de ofertas (ejemplo)", IdProceso = 2 },
+        new() { IdSubproceso = 104, Codigo = "EJ-02.2", Nombre = "Aprobación de ofertas (ejemplo)", IdProceso = 2 },
+        new() { IdSubproceso = 105, Codigo = "EJ-03.1", Nombre = "Registro de pedidos (ejemplo)", IdProceso = 3 },
+        new() { IdSubproceso = 106, Codigo = "EJ-09.1", Nombre = "Emisión de facturas (ejemplo)", IdProceso = 9 },
+    ];
+
+    /// <summary>
+    /// Filas de PROCESO_ASOCIADO: los procesos 1 y 9 tienen un proceso asociado; el del proceso 1 usa el
+    /// subproceso 101 y el subproceso 103 solo tiene un proceso asociado ya borrado.
+    /// </summary>
+    public static List<PROCESO_ASOCIADO> ProcesosAsociados() =>
+    [
+        new() { IdProcesoAsociado = 1, IdProceso = 1, IdSubproceso = 101 },
+        new() { IdProcesoAsociado = 2, IdProceso = 9, IdSubproceso = null },
+        new() { IdProcesoAsociado = 3, IdProceso = 2, IdSubproceso = 103, Borrado = true },
+    ];
 }

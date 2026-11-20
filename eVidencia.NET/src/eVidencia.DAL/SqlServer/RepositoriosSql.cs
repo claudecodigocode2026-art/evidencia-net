@@ -135,6 +135,27 @@ public sealed class RepositorioProcesosSql(IFabricaConexiones fabrica) : IReposi
         return tipos;
     }
 
+    public List<PROCESO> ObtenerNoBorradosPorCodigo()
+    {
+        List<PROCESO> procesos = [];
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando("SELECT " + Columnas + Desde + " WHERE p.Borrado = 0 ORDER BY p.Codigo");
+        using DbDataReader lector = consulta.ExecuteReader();
+        while (lector.Read()) procesos.Add(Leer(lector));
+        return procesos;
+    }
+
+    public List<PROCESO> ObtenerConSubprocesos()
+    {
+        List<PROCESO> procesos = [];
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT " + Columnas + Desde + " WHERE p.Borrado = 0 AND EXISTS (SELECT 1 FROM SUBPROCESO s WHERE s.IdProceso = p.IdProceso) ORDER BY p.IdProceso");
+        using DbDataReader lector = consulta.ExecuteReader();
+        while (lector.Read()) procesos.Add(Leer(lector));
+        return procesos;
+    }
+
     private static PROCESO Leer(DbDataReader lector) => new()
     {
         IdProceso = lector.GetInt32(0),
@@ -186,6 +207,136 @@ public sealed class RepositorioSubprocesosSql(IFabricaConexiones fabrica) : IRep
             "UPDATE SUBPROCESO SET Borrado = 1 WHERE IdSubproceso = @IdSubproceso", ("@IdSubproceso", idSubproceso));
         comando.ExecuteNonQuery();
     }
+
+    private const string ColumnasConProceso =
+        "s.IdSubproceso, s.Codigo, s.Nombre, s.IdProceso, s.Borrado, s.TipoOtros, p.Nombre AS ProcesoNombre, p.Codigo AS ProcesoCodigo";
+
+    // LEFT JOIN: la relación SUBPROCESO.PROCESO del modelo original no filtra por PROCESO.Borrado.
+    private const string DesdeConProceso =
+        " FROM SUBPROCESO s LEFT JOIN PROCESO p ON p.IdProceso = s.IdProceso";
+
+    private static readonly Dictionary<string, string> ColumnaDeOrden = new()
+    {
+        [CamposOrdenSubproceso.IdSubproceso] = "s.IdSubproceso",
+        [CamposOrdenSubproceso.Codigo] = "s.Codigo",
+        [CamposOrdenSubproceso.Nombre] = "s.Nombre",
+        [CamposOrdenSubproceso.Proceso] = "p.Nombre"
+    };
+
+    public List<SUBPROCESO> ObtenerFiltrados(FiltroSUBPROCESO? filtro, string orden, int numeroPagina, int numeroElementosPorPagina, out int numeroElementosTotales)
+    {
+        List<(string, object?)> parametros = [];
+        string donde = " WHERE s.Borrado = 0 AND s.TipoOtros = 0";
+
+        if (filtro != null)
+        {
+            if (!string.IsNullOrEmpty(filtro.Codigo))
+            {
+                donde += " AND s.Codigo LIKE @Codigo ESCAPE '~'";
+                parametros.Add(("@Codigo", ExtensionesDb.PatronContiene(filtro.Codigo)));
+            }
+            if (!string.IsNullOrEmpty(filtro.Nombre))
+            {
+                donde += " AND s.Nombre LIKE @Nombre ESCAPE '~'";
+                parametros.Add(("@Nombre", ExtensionesDb.PatronContiene(filtro.Nombre)));
+            }
+            if (filtro.ListaIdProceso != null)
+            {
+                if (filtro.ListaIdProceso.Count == 0)
+                {
+                    donde += " AND 1 = 0";
+                }
+                else
+                {
+                    // Un parámetro por identificador: nunca se concatena el valor en la sentencia.
+                    List<string> nombres = [];
+                    for (int i = 0; i < filtro.ListaIdProceso.Count; i++)
+                    {
+                        nombres.Add("@IdProceso" + i);
+                        parametros.Add(("@IdProceso" + i, filtro.ListaIdProceso[i]));
+                    }
+                    donde += " AND s.IdProceso IN (" + string.Join(", ", nombres) + ")";
+                }
+            }
+        }
+
+        List<CriterioOrden> criterios = OrdenGrid.Interpretar(orden, CamposOrdenSubproceso.Todos);
+        if (criterios.Count == 0)
+            throw new ArgumentException("No se ha indicado el orden del listado.");
+        string ordenSql = string.Join(", ", criterios.Select(c => ColumnaDeOrden[c.Campo] + (c.Descendente ? " DESC" : " ASC")));
+
+        using DbConnection conexion = fabrica.Abrir();
+        using (DbCommand contar = conexion.Comando("SELECT COUNT(*)" + DesdeConProceso + donde, [.. parametros]))
+        {
+            numeroElementosTotales = Convert.ToInt32(contar.ExecuteScalar());
+        }
+
+        List<(string, object?)> parametrosPagina = [.. parametros,
+            ("@Saltar", numeroElementosPorPagina * (numeroPagina - 1)),
+            ("@Tomar", numeroElementosPorPagina)];
+        string sql = "SELECT " + ColumnasConProceso + DesdeConProceso + donde + " ORDER BY " + ordenSql +
+                     " OFFSET @Saltar ROWS FETCH NEXT @Tomar ROWS ONLY";
+
+        List<SUBPROCESO> subprocesos = [];
+        using DbCommand consulta = conexion.Comando(sql, [.. parametrosPagina]);
+        using DbDataReader lector = consulta.ExecuteReader();
+        while (lector.Read()) subprocesos.Add(LeerConProceso(lector));
+        return subprocesos;
+    }
+
+    public SUBPROCESO? ObtenerPorId(int idSubproceso)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT " + ColumnasConProceso + DesdeConProceso + " WHERE s.IdSubproceso = @IdSubproceso AND s.Borrado = 0",
+            ("@IdSubproceso", idSubproceso));
+        using DbDataReader lector = consulta.ExecuteReader();
+        return lector.Read() ? LeerConProceso(lector) : null;
+    }
+
+    public int ContarConMismoCodigo(string? codigo, int idSubprocesoExcluido)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT COUNT(*) FROM SUBPROCESO WHERE Codigo = @Codigo AND IdSubproceso <> @IdSubproceso AND Borrado = 0",
+            ("@Codigo", codigo), ("@IdSubproceso", idSubprocesoExcluido));
+        return Convert.ToInt32(consulta.ExecuteScalar());
+    }
+
+    public void Actualizar(SUBPROCESO subproceso)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand comando = conexion.Comando(
+            "UPDATE SUBPROCESO SET Codigo = @Codigo, Nombre = @Nombre, IdProceso = @IdProceso WHERE IdSubproceso = @IdSubproceso",
+            ("@Codigo", subproceso.Codigo), ("@Nombre", subproceso.Nombre),
+            ("@IdProceso", subproceso.IdProceso), ("@IdSubproceso", subproceso.IdSubproceso));
+        comando.ExecuteNonQuery();
+    }
+
+    public int ContarProcesosAsociadosNoBorrados(int idSubproceso)
+    {
+        using DbConnection conexion = fabrica.Abrir();
+        using DbCommand consulta = conexion.Comando(
+            "SELECT COUNT(*) FROM PROCESO_ASOCIADO WHERE IdSubproceso = @IdSubproceso AND Borrado = 0",
+            ("@IdSubproceso", idSubproceso));
+        return Convert.ToInt32(consulta.ExecuteScalar());
+    }
+
+    private static SUBPROCESO LeerConProceso(DbDataReader lector) => new()
+    {
+        IdSubproceso = lector.GetInt32(0),
+        Codigo = lector.IsDBNull(1) ? null : lector.GetString(1),
+        Nombre = lector.IsDBNull(2) ? null : lector.GetString(2),
+        IdProceso = lector.GetInt32(3),
+        Borrado = lector.GetBoolean(4),
+        TipoOtros = lector.GetBoolean(5),
+        PROCESO = lector.IsDBNull(6) ? null : new PROCESO
+        {
+            IdProceso = lector.GetInt32(3),
+            Nombre = lector.GetString(6),
+            Codigo = lector.IsDBNull(7) ? null : lector.GetString(7)
+        }
+    };
 }
 
 public sealed class RepositorioUsuariosSql(IFabricaConexiones fabrica) : IRepositorioUsuarios
