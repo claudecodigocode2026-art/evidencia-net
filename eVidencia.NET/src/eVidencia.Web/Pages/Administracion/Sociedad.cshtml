@@ -1,0 +1,54 @@
+@page "/Administracion/Sociedad.aspx"
+@model eVidencia.Web.Pages.Administracion.SociedadModel
+@*
+    Alta y edición de una Sociedad.
+    Funcionalidad: eVidencias.Web/Administracion/Sociedad.aspx.
+    Diseño: el de la ficha de Proceso del mockup "eVidencia · Mockup responsive".
+*@
+<section class="ev-screen ev-page" data-screen-label="Sociedad">
+  <h1 class="ev-page-title">Sociedad@(Model.Accion == Accion.Crear ? " (alta)" : "")</h1>
+  <form method="post" id="formSociedad" novalidate>
+    <input type="hidden" name="hdnAccion" value="@Model.Accion" />
+    <input type="hidden" name="hdnIdSociedad" value="@Model.IdSociedad" />
+    <div class="ev-card">
+      <div class="ev-form-grid">
+        <div class="ev-field @(Model.ErrorEnCodigoEsif ? "has-error" : "")">
+          <label class="ev-label" for="txtCodEsif">Código eSif</label>
+          <div class="ev-inline"><input class="ev-input" name="txtCodEsif" id="txtCodEsif" maxlength="4" value="@Model.CodigoEsif" autocomplete="off" /></div>
+        </div>
+        <div class="ev-field @(Model.ErrorEnNombre ? "has-error" : "")">
+          <label class="ev-label" for="txtNombre">Nombre</label>
+          <div class="ev-inline"><input class="ev-input" name="txtNombre" id="txtNombre" maxlength="50" value="@Model.Nombre" autocomplete="off" /></div>
+        </div>
+        <div class="ev-field @(Model.ErrorEnTipoDeEmpresa ? "has-error" : "")">
+          <label class="ev-label" for="ddTipoDeEmpresa">Tipo de Empresa</label>
+          <div class="ev-inline">
+            <select class="ev-select" name="ddTipoDeEmpresa" id="ddTipoDeEmpresa">
+              <option value="-1" selected="@(Model.TipoDeEmpresa == "-1")"></option>
+              @foreach (var tipo in Model.TiposDeEmpresa)
+              {
+                <option value="@tipo.IdTipoDeEmpresa" selected="@(Model.TipoDeEmpresa == tipo.IdTipoDeEmpresa.ToString())">@tipo.Nombre</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="ev-field @(Model.ErrorEnPais ? "has-error" : "")">
+          <label class="ev-label" for="ddPais">País</label>
+          <div class="ev-inline">
+            <select class="ev-select" name="ddPais" id="ddPais">
+              <option value="-1" selected="@(Model.Pais == "-1")"></option>
+              @foreach (var pais in Model.Paises)
+              {
+                <option value="@pais.IdPais" selected="@(Model.Pais == pais.IdPais.ToString())">@pais.Nombre</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev-actions" style="margin-top:16px">
+      <button type="submit" class="ev-btn ev-btn--primary" id="btnGuardar">Guardar</button>
+      <a class="ev-btn ev-btn--ghost" id="btnVolver" href="/Administracion/Sociedades.aspx">Volver</a>
+    </div>
+  </form>
+</section>

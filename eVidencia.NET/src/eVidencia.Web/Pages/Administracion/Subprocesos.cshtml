@@ -1,0 +1,96 @@
+@page "/Administracion/Subprocesos.aspx"
+@model eVidencia.Web.Pages.Administracion.SubprocesosModel
+@using eVidencia.Web.Servicios
+@*
+    Listado de Subprocesos.
+    Funcionalidad: eVidencias.Web/Administracion/Subprocesos.aspx (filtros, orden, paginación, alta, edición y baja).
+    Diseño: el del listado de Procesos del mockup "eVidencia · Mockup responsive".
+    El botón "Exportar" del mockup se muestra inactivo: la exportación a Excel queda fuera de la demo.
+*@
+<section class="ev-screen ev-page" data-screen-label="Subprocesos">
+  <h1 class="ev-page-title" id="tituloListado">Subprocesos</h1>
+  <div class="ev-advbar"></div>
+  <div class="ev-filters">
+    <div class="ev-fgrid">
+      <label class="ev-fbox"><span class="ev-fbox__l">@WebGlobal.SubprocesosCodigo</span><input class="ev-fbox__c" id="txtCodigoFiltro" maxlength="10" placeholder="Cualquiera" value="" autocomplete="off" /></label>
+      <label class="ev-fbox"><span class="ev-fbox__l">@WebGlobal.SubprocesosNombre</span><input class="ev-fbox__c" id="txtNombreFiltro" maxlength="50" placeholder="Cualquiera" value="" autocomplete="off" /></label>
+      <label class="ev-fbox"><span class="ev-fbox__l">@WebGlobal.SubprocesosProceso</span>
+        <select class="ev-fbox__c" id="ddProcesoFiltro">
+          <option value="">@WebGlobal.Todos</option>
+          @foreach (var proceso in Model.ProcesosDelFiltro)
+          {
+            <option value="@proceso.IdProceso">@proceso.Nombre</option>
+          }
+        </select>
+      </label>
+      <div class="ev-fgrid__btns">
+        <button type="button" class="ev-btn ev-btn--primary ev-btn--sm" id="btnFiltrar">@WebGlobal.btnFiltrar</button>
+        <button type="button" class="ev-btn ev-btn--secondary ev-btn--icon ev-btn--sm" id="btnBorrarFiltros" aria-label="@WebGlobal.btnBorrarFiltros" title="@WebGlobal.btnBorrarFiltros"><svg class="ev-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"></path></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="ev-toolbar">
+    <button type="button" class="ev-btn ev-btn--secondary ev-btn--sm" id="btnExportar" disabled title="No incluido en la demo">Exportar</button>
+    <button type="button" class="ev-btn ev-btn--primary ev-btn--sm" id="btnCrear">Crear</button>
+    <button type="button" class="ev-btn ev-btn--secondary ev-btn--sm" id="btnEditar">Editar</button>
+    <button type="button" class="ev-btn ev-btn--secondary ev-btn--sm" id="btnEliminar">Eliminar</button>
+  </div>
+  <div class="ev-table-wrap">
+    <div class="ev-table-scroll"><table class="ev-table" id="grid"></table></div>
+    <div class="ev-pager" id="paginador"></div>
+  </div>
+  <p class="ev-hint">Pulsa <b>i</b> o haz doble clic en una fila para abrirla · clic en una cabecera para ordenar</p>
+
+  <form method="post" action="/Administracion/Subprocesos.aspx?handler=Eliminar" id="formEliminar">
+    <input type="hidden" name="hdnId" id="hdnId" value="" />
+  </form>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var listado = EV.listado({
+    id: 'Administracion_Subprocesos',
+    nombre: 'Subprocesos',
+    url: '/Administracion/AdministracionService.asmx/ConsultarGridSubprocesos',
+    tabla: '#grid', paginador: '#paginador', titulo: '#tituloListado',
+    clave: 'IdSubproceso',
+    columnas: [
+      { campo: 'Codigo', titulo: '@WebGlobal.SubprocesosCodigo', orden: 'Codigo' },
+      { campo: 'Nombre', titulo: '@WebGlobal.SubprocesosNombre', orden: 'Nombre' },
+      { campo: 'Proceso', titulo: '@WebGlobal.SubprocesosProceso', orden: 'PROCESO.Nombre' }
+    ],
+    ordenInicial: { campo: 'Codigo', dir: 'asc' },
+    filtros: { Codigo: '#txtCodigoFiltro', Nombre: '#txtNombreFiltro', ListaIdProceso: '#ddProcesoFiltro' },
+    // Como el original (Subprocesos.aspx:88): el proceso elegido se envía como una lista de un elemento.
+    alEnviarFiltro: function (f) {
+      return { Codigo: f.Codigo, Nombre: f.Nombre, ListaIdProceso: f.ListaIdProceso == null ? null : [f.ListaIdProceso] };
+    },
+    esVolver: @(Model.EsVolver ? "true" : "false"),
+    alAbrir: function (fila) { listado.recordar(); window.location = '/Administracion/Subproceso.aspx?accion=editar&IdSubproceso=' + fila.IdSubproceso; }
+  });
+
+  document.getElementById('btnFiltrar').addEventListener('click', listado.filtrar);
+  document.getElementById('btnBorrarFiltros').addEventListener('click', listado.borrarFiltros);
+  ['txtCodigoFiltro', 'txtNombreFiltro', 'ddProcesoFiltro'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); listado.filtrar(); } });
+  });
+
+  document.getElementById('btnCrear').addEventListener('click', function () {
+    listado.recordar(); window.location = '/Administracion/Subproceso.aspx?accion=crear';
+  });
+  document.getElementById('btnEditar').addEventListener('click', function () {
+    var fila = listado.seleccion();
+    if (!fila) { EV.alerta('@WebGlobal.NoSeHaSeleccionadoNingunaFila'); return; }
+    listado.recordar(); window.location = '/Administracion/Subproceso.aspx?accion=editar&IdSubproceso=' + fila.IdSubproceso;
+  });
+  document.getElementById('btnEliminar').addEventListener('click', function () {
+    var fila = listado.seleccion();
+    if (!fila) { EV.alerta('@WebGlobal.NoSeHaSeleccionadoNingunaFila'); return; }
+    EV.confirmar('@Html.Raw(WebGlobal.SeguroDeseaEliminar)'.replace('{0}', fila.Nombre).trim(), function () {
+      listado.recordar();
+      document.getElementById('hdnId').value = fila.IdSubproceso;
+      document.getElementById('formEliminar').submit();
+    });
+  });
+});
+</script>

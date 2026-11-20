@@ -1,0 +1,109 @@
+@page "/Administracion/Sociedades.aspx"
+@model eVidencia.Web.Pages.Administracion.SociedadesModel
+@using eVidencia.Web.Servicios
+@*
+    Listado de Sociedades.
+    Funcionalidad: eVidencias.Web/Administracion/Sociedades.aspx (filtros, orden, paginación, alta, edición y baja).
+    Diseño: el del listado de Procesos del mockup "eVidencia · Mockup responsive".
+    El botón "Exportar" se muestra inactivo: la exportación a Excel está pendiente (módulo común).
+*@
+<section class="ev-screen ev-page" data-screen-label="Sociedades">
+  <h1 class="ev-page-title" id="tituloListado">Sociedades</h1>
+  <div class="ev-advbar"></div>
+  <div class="ev-filters">
+    <div class="ev-fgrid">
+      <label class="ev-fbox"><span class="ev-fbox__l">@WebGlobal.SociedadesNombre</span><input class="ev-fbox__c" id="txtNombreFiltro" maxlength="50" placeholder="Cualquiera" value="" autocomplete="off" /></label>
+      <label class="ev-fbox"><span class="ev-fbox__l">@WebGlobal.SociedadesTipoEmpresa</span>
+        <select class="ev-fbox__c" id="ddTipoDeEmpresaFiltro">
+          <option value="">@WebGlobal.Todos</option>
+          @foreach (var tipo in Model.TiposDeEmpresa)
+          {
+            <option value="@tipo.IdTipoDeEmpresa">@tipo.Nombre</option>
+          }
+        </select>
+      </label>
+      <label class="ev-fbox"><span class="ev-fbox__l">País</span>
+        <select class="ev-fbox__c" id="ddPaisFiltro">
+          <option value="">@WebGlobal.Todos</option>
+          @foreach (var pais in Model.Paises)
+          {
+            <option value="@pais.IdPais">@pais.Nombre</option>
+          }
+        </select>
+      </label>
+      <div class="ev-fgrid__btns">
+        <button type="button" class="ev-btn ev-btn--primary ev-btn--sm" id="btnFiltrar">@WebGlobal.btnFiltrar</button>
+        <button type="button" class="ev-btn ev-btn--secondary ev-btn--icon ev-btn--sm" id="btnBorrarFiltros" aria-label="@WebGlobal.btnBorrarFiltros" title="@WebGlobal.btnBorrarFiltros"><svg class="ev-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"></path></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="ev-toolbar">
+    <button type="button" class="ev-btn ev-btn--secondary ev-btn--sm" id="btnExportar" disabled title="No incluido en la demo">Exportar</button>
+    <button type="button" class="ev-btn ev-btn--primary ev-btn--sm" id="btnCrear">Crear</button>
+    <button type="button" class="ev-btn ev-btn--secondary ev-btn--sm" id="btnEditar">Editar</button>
+    <button type="button" class="ev-btn ev-btn--secondary ev-btn--sm" id="btnEliminar">Eliminar</button>
+  </div>
+  <div class="ev-table-wrap">
+    <div class="ev-table-scroll"><table class="ev-table" id="grid"></table></div>
+    <div class="ev-pager" id="paginador"></div>
+  </div>
+  <p class="ev-hint">Pulsa <b>i</b> o haz doble clic en una fila para abrirla · clic en una cabecera para ordenar</p>
+
+  <form method="post" action="/Administracion/Sociedades.aspx?handler=Eliminar" id="formEliminar">
+    <input type="hidden" name="hdnId" id="hdnId" value="" />
+  </form>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var listado = EV.listado({
+    id: 'Administracion_Sociedades',
+    nombre: 'Sociedades',
+    url: '/Administracion/AdministracionService.asmx/ConsultarGridSociedades',
+    tabla: '#grid', paginador: '#paginador', titulo: '#tituloListado',
+    clave: 'IdSociedad',
+    columnas: [
+      { campo: 'CodigoEsif', titulo: '@WebGlobal.SociedadesCodigoeSif', orden: 'CodigoEsif' },
+      { campo: 'Nombre', titulo: '@WebGlobal.SociedadesNombre', orden: 'Nombre' },
+      { campo: 'TipoDeEmpresa', titulo: '@WebGlobal.SociedadesTipoEmpresa', orden: 'TIPO_DE_EMPRESA.Nombre' },
+      { campo: 'Pais', titulo: '@WebGlobal.SociedadesPais', orden: 'PAIS.Nombre' }
+    ],
+    ordenInicial: { campo: 'CodigoEsif', dir: 'asc' },
+    filtros: { Nombre: '#txtNombreFiltro', ListaIdTipoEmpresa: '#ddTipoDeEmpresaFiltro', ListaIdPais: '#ddPaisFiltro' },
+    // Como el original (Sociedades.aspx:83-93): el tipo y el país elegidos se envían como listas de un elemento.
+    alEnviarFiltro: function (f) {
+      return {
+        Nombre: f.Nombre,
+        ListaIdTipoEmpresa: f.ListaIdTipoEmpresa == null ? null : [f.ListaIdTipoEmpresa],
+        ListaIdPais: f.ListaIdPais == null ? null : [f.ListaIdPais]
+      };
+    },
+    esVolver: @(Model.EsVolver ? "true" : "false"),
+    alAbrir: function (fila) { listado.recordar(); window.location = '/Administracion/Sociedad.aspx?accion=editar&IdSociedad=' + fila.IdSociedad; }
+  });
+
+  document.getElementById('btnFiltrar').addEventListener('click', listado.filtrar);
+  document.getElementById('btnBorrarFiltros').addEventListener('click', listado.borrarFiltros);
+  ['txtNombreFiltro', 'ddTipoDeEmpresaFiltro', 'ddPaisFiltro'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); listado.filtrar(); } });
+  });
+
+  document.getElementById('btnCrear').addEventListener('click', function () {
+    listado.recordar(); window.location = '/Administracion/Sociedad.aspx?accion=crear';
+  });
+  document.getElementById('btnEditar').addEventListener('click', function () {
+    var fila = listado.seleccion();
+    if (!fila) { EV.alerta('@WebGlobal.NoSeHaSeleccionadoNingunaFila'); return; }
+    listado.recordar(); window.location = '/Administracion/Sociedad.aspx?accion=editar&IdSociedad=' + fila.IdSociedad;
+  });
+  document.getElementById('btnEliminar').addEventListener('click', function () {
+    var fila = listado.seleccion();
+    if (!fila) { EV.alerta('@WebGlobal.NoSeHaSeleccionadoNingunaFila'); return; }
+    EV.confirmar('@Html.Raw(WebGlobal.SeguroDeseaEliminar)'.replace('{0}', fila.Nombre).trim(), function () {
+      listado.recordar();
+      document.getElementById('hdnId').value = fila.IdSociedad;
+      document.getElementById('formEliminar').submit();
+    });
+  });
+});
+</script>

@@ -69,6 +69,21 @@ public class GestorProcesos(
             ?? throw new ApplicationException(DatosMaestros.ProcesosNoExisteProceso);
     }
 
+    /// <summary>Procesos no borrados ordenados por código. Origen: ConsultarProcesos (línea 120).</summary>
+    public List<PROCESO> ConsultarProcesos()
+    {
+        Exigir(AccionProceso.ConsultarProceso);
+        return procesos.ObtenerNoBorradosPorCodigo();
+    }
+
+    /// <summary>
+    /// Procesos no borrados que tienen algún subproceso, para el filtro del listado de Subprocesos.
+    /// Como en el origen, no comprueba permisos y cuenta también los subprocesos borrados.
+    /// El origen no indica orden; aquí se devuelven por identificador.
+    /// Origen: ConsultarProcesosParaSubprocesos (línea 552).
+    /// </summary>
+    public List<PROCESO> ConsultarProcesosParaSubprocesos() => procesos.ObtenerConSubprocesos();
+
     /// <summary>Origen: ConsultarTiposProcesos (línea 462).</summary>
     public List<TIPO_DE_PROCESO> ConsultarTiposProcesos()
     {
